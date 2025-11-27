@@ -13,29 +13,17 @@ on:
         default: false
 
 jobs:
-  regression-test:
+  # Build binaries once (shared by all test jobs)
+  build-binaries:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 5
 
     steps:
-      # 1. SETUP
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # Fetch all history for git describe to work
-
-      - name: Create output directory
-        run: mkdir -p test/output
-
-      - name: Create k3s cluster
-        id: k3s
-        uses: replicatedhq/action-k3s@main
-        with:
-          version: v1.31.2-k3s1
-
-      - name: Verify cluster access
-        run: kubectl get nodes -o wide
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -49,84 +37,76 @@ jobs:
           ./bin/preflight version
           ./bin/support-bundle version
 
+      - name: Upload binaries
+        uses: actions/upload-artifact@v5
+        with:
+          name: binaries-${{ github.run_id }}
+          path: |
+            bin/preflight
+            bin/support-bundle
+          retention-days: 1
+
+  # Preflight v1beta3 test (parallel job 1)
+  test-preflight-v1beta3:
+    needs: [build-binaries]
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Create output directory
+        run: mkdir -p test/output
+
+      - name: Create k3s cluster
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+
+      - name: Verify cluster access
+        run: kubectl get nodes -o wide
+
+      - name: Download binaries
+        uses: actions/download-artifact@v5
+        with:
+          name: binaries-${{ github.run_id }}
+          path: bin/
+
+      - name: Make binaries executable
+        run: |
+          chmod +x bin/preflight bin/support-bundle
+          ./bin/preflight version
+
       - name: Setup Python for comparison
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: |
-          pip install pyyaml deepdiff
+        run: pip install pyyaml deepdiff
 
-      # 2. EXECUTE SPECS (in parallel)
-      - name: Run all specs in parallel
+      - name: Run preflight v1beta3
         continue-on-error: true
         run: |
-          echo "Running all 3 specs in parallel..."
+          echo "Running preflight v1beta3..."
+          ./bin/preflight \
+            examples/preflight/complex-v1beta3.yaml \
+            --values examples/preflight/values-complex-full.yaml \
+            --interactive=false \
+            --format=json \
+            --auto-update=false \
+            --output=test/output/preflight-results-v1beta3.json 2>&1 | tee test/output/v1beta3.log || true
 
-          # Run v1beta3 in background
-          (
-            echo "Starting preflight v1beta3..."
-            ./bin/preflight \
-              examples/preflight/complex-v1beta3.yaml \
-              --values examples/preflight/values-complex-full.yaml \
-              --interactive=false \
-              --format=json \
-              --output=test/output/preflight-results-v1beta3.json 2>&1 | tee test/output/v1beta3.log || true
+          BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+          if [ -n "$BUNDLE" ]; then
+            mv "$BUNDLE" test/output/preflight-v1beta3-bundle.tar.gz
+            echo "✓ v1beta3 bundle saved"
+          fi
 
-            BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
-            if [ -n "$BUNDLE" ]; then
-              mv "$BUNDLE" test/output/preflight-v1beta3-bundle.tar.gz
-              echo "✓ v1beta3 bundle saved"
-            fi
-          ) &
-          PID_V1BETA3=$!
-
-          # Run v1beta2 in background
-          (
-            echo "Starting preflight v1beta2..."
-            ./bin/preflight \
-              examples/preflight/all-analyzers-v1beta2.yaml \
-              --interactive=false \
-              --format=json \
-              --output=test/output/preflight-results-v1beta2.json 2>&1 | tee test/output/v1beta2.log || true
-
-            BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
-            if [ -n "$BUNDLE" ]; then
-              mv "$BUNDLE" test/output/preflight-v1beta2-bundle.tar.gz
-              echo "✓ v1beta2 bundle saved"
-            fi
-          ) &
-          PID_V1BETA2=$!
-
-          # Run support bundle in background
-          (
-            echo "Starting support bundle..."
-            ./bin/support-bundle \
-              examples/collect/host/all-kubernetes-collectors.yaml \
-              --interactive=false \
-              --output=test/output/supportbundle.tar.gz 2>&1 | tee test/output/supportbundle.log || true
-
-            if [ -f test/output/supportbundle.tar.gz ]; then
-              echo "✓ Support bundle saved"
-            fi
-          ) &
-          PID_SUPPORTBUNDLE=$!
-
-          # Wait for all to complete
-          echo "Waiting for all specs to complete..."
-          wait $PID_V1BETA3
-          wait $PID_V1BETA2
-          wait $PID_SUPPORTBUNDLE
-
-          echo "All specs completed!"
-
-          # Verify bundles exist
-          ls -lh test/output/*.tar.gz || echo "Warning: Some bundles may be missing"
-
-      # 3. COMPARE BUNDLES
       - name: Compare preflight v1beta3 bundle
-        id: compare-v1beta3
+        id: compare
         continue-on-error: true
         run: |
           echo "Comparing v1beta3 preflight bundle against baseline..."
@@ -143,8 +123,86 @@ jobs:
             --report test/output/diff-report-v1beta3.json \
             --spec-type preflight
 
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-v1beta3-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test/output/preflight-v1beta3-bundle.tar.gz
+            test/output/preflight-results-v1beta3.json
+            test/output/diff-report-v1beta3.json
+            test/output/v1beta3.log
+          retention-days: 30
+
+      - name: Set job outcome
+        if: always()
+        run: |
+          if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
+            echo "comparison_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Preflight v1beta2 test (parallel job 2)
+  test-preflight-v1beta2:
+    needs: [build-binaries]
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Create output directory
+        run: mkdir -p test/output
+
+      - name: Create k3s cluster
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+
+      - name: Verify cluster access
+        run: kubectl get nodes -o wide
+
+      - name: Download binaries
+        uses: actions/download-artifact@v5
+        with:
+          name: binaries-${{ github.run_id }}
+          path: bin/
+
+      - name: Make binaries executable
+        run: |
+          chmod +x bin/preflight bin/support-bundle
+          ./bin/preflight version
+
+      - name: Setup Python for comparison
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml deepdiff
+
+      - name: Run preflight v1beta2
+        continue-on-error: true
+        run: |
+          echo "Running preflight v1beta2..."
+          ./bin/preflight \
+            examples/preflight/all-analyzers-v1beta2.yaml \
+            --interactive=false \
+            --format=json \
+            --auto-update=false \
+            --output=test/output/preflight-results-v1beta2.json 2>&1 | tee test/output/v1beta2.log || true
+
+          BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+          if [ -n "$BUNDLE" ]; then
+            mv "$BUNDLE" test/output/preflight-v1beta2-bundle.tar.gz
+            echo "✓ v1beta2 bundle saved"
+          fi
+
       - name: Compare preflight v1beta2 bundle
-        id: compare-v1beta2
+        id: compare
         continue-on-error: true
         run: |
           echo "Comparing v1beta2 preflight bundle against baseline..."
@@ -161,8 +219,83 @@ jobs:
             --report test/output/diff-report-v1beta2.json \
             --spec-type preflight
 
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-v1beta2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test/output/preflight-v1beta2-bundle.tar.gz
+            test/output/preflight-results-v1beta2.json
+            test/output/diff-report-v1beta2.json
+            test/output/v1beta2.log
+          retention-days: 30
+
+      - name: Set job outcome
+        if: always()
+        run: |
+          if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
+            echo "comparison_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Support bundle test (parallel job 3)
+  test-supportbundle:
+    needs: [build-binaries]
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Create output directory
+        run: mkdir -p test/output
+
+      - name: Create k3s cluster
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+
+      - name: Verify cluster access
+        run: kubectl get nodes -o wide
+
+      - name: Download binaries
+        uses: actions/download-artifact@v5
+        with:
+          name: binaries-${{ github.run_id }}
+          path: bin/
+
+      - name: Make binaries executable
+        run: |
+          chmod +x bin/preflight bin/support-bundle
+          ./bin/support-bundle version
+
+      - name: Setup Python for comparison
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml deepdiff
+
+      - name: Run support bundle
+        continue-on-error: true
+        run: |
+          echo "Running support bundle..."
+          ./bin/support-bundle \
+            examples/collect/host/all-kubernetes-collectors.yaml \
+            --interactive=false \
+            --auto-update=false \
+            --output=test/output/supportbundle.tar.gz 2>&1 | tee test/output/supportbundle.log || true
+
+          if [ -f test/output/supportbundle.tar.gz ]; then
+            echo "✓ Support bundle saved"
+          fi
+
       - name: Compare support bundle
-        id: compare-supportbundle
+        id: compare
         continue-on-error: true
         run: |
           echo "Comparing support bundle against baseline..."
@@ -179,44 +312,81 @@ jobs:
             --report test/output/diff-report-supportbundle.json \
             --spec-type supportbundle
 
-      # 4. REPORT RESULTS
-      - name: Generate summary report
+      - name: Upload test artifacts
         if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-supportbundle-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test/output/supportbundle.tar.gz
+            test/output/diff-report-supportbundle.json
+            test/output/supportbundle.log
+          retention-days: 30
+
+      - name: Set job outcome
+        if: always()
+        run: |
+          if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
+            echo "comparison_failed=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # Report results (runs after all tests complete)
+  report-results:
+    needs: [test-preflight-v1beta3, test-preflight-v1beta2, test-supportbundle]
+    if: always() && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install pyyaml deepdiff
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: test/output
+          pattern: test-results-*
+
+      - name: Reorganize artifacts
+        run: |
+          # Move artifacts from nested directories to test/output
+          find test/output/test-results-* -type f -exec mv {} test/output/ \;
+          # Clean up empty directories
+          find test/output/test-results-* -type d -empty -delete || true
+
+      - name: Generate summary report
         run: |
           python3 scripts/generate_summary.py \
             --reports test/output/diff-report-*.json \
             --output-file $GITHUB_STEP_SUMMARY \
             --output-console
 
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: regression-test-results-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            test/output/*.tar.gz
-            test/output/*.json
-          retention-days: 30
-
       - name: Check for regressions
-        if: always()
         run: |
           echo "Checking comparison results..."
 
-          # Check if any comparisons failed
           FAILURES=0
 
-          if [ "${{ steps.compare-v1beta3.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta3.outputs.baseline_missing }}" != "true" ]; then
+          if [ "${{ needs.test-preflight-v1beta3.result }}" == "failure" ]; then
             echo "❌ v1beta3 comparison failed"
             FAILURES=$((FAILURES + 1))
           fi
 
-          if [ "${{ steps.compare-v1beta2.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta2.outputs.baseline_missing }}" != "true" ]; then
+          if [ "${{ needs.test-preflight-v1beta2.result }}" == "failure" ]; then
             echo "❌ v1beta2 comparison failed"
             FAILURES=$((FAILURES + 1))
           fi
 
-          if [ "${{ steps.compare-supportbundle.outcome }}" == "failure" ] && [ "${{ steps.compare-supportbundle.outputs.baseline_missing }}" != "true" ]; then
+          if [ "${{ needs.test-supportbundle.result }}" == "failure" ]; then
             echo "❌ Support bundle comparison failed"
             FAILURES=$((FAILURES + 1))
           fi
@@ -230,7 +400,6 @@ jobs:
             echo "✅ All comparisons passed or skipped (no baseline)"
           fi
 
-      # 5. UPDATE BASELINES (optional, manual trigger only)
       - name: Update baselines
         if: github.event.inputs.update_baselines == 'true' && github.event_name == 'workflow_dispatch'
         run: |
@@ -260,7 +429,7 @@ jobs:
           {
             "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "git_sha": "${{ github.sha }}",
-            "k8s_version": "v1.28.3",
+            "k8s_version": "v1.31.2-k3s1",
             "workflow_run": "${{ github.run_id }}"
           }
           EOF
@@ -271,6 +440,3 @@ jobs:
           git add test/baselines/
           git commit -m "chore: update regression test baselines from run ${{ github.run_id }}"
           git push
-
-      # 6. CLEANUP
-      # Note: k3s cluster cleanup is handled automatically by the action
