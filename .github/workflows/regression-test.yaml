@@ -131,7 +131,7 @@ jobs:
             --spec-type preflight
 
       - name: Upload test artifacts
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
           name: test-results-v1beta3-${{ github.run_id }}-${{ github.run_attempt }}
@@ -143,7 +143,7 @@ jobs:
           retention-days: 30
 
       - name: Set job outcome
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
             echo "comparison_failed=true" >> $GITHUB_OUTPUT
@@ -234,7 +234,7 @@ jobs:
             --spec-type preflight
 
       - name: Upload test artifacts
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
           name: test-results-v1beta2-${{ github.run_id }}-${{ github.run_attempt }}
@@ -246,7 +246,7 @@ jobs:
           retention-days: 30
 
       - name: Set job outcome
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
             echo "comparison_failed=true" >> $GITHUB_OUTPUT
@@ -334,7 +334,7 @@ jobs:
             --spec-type supportbundle
 
       - name: Upload test artifacts
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
           name: test-results-supportbundle-${{ github.run_id }}-${{ github.run_attempt }}
@@ -345,7 +345,7 @@ jobs:
           retention-days: 30
 
       - name: Set job outcome
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           if [ "${{ steps.compare.outcome }}" == "failure" ] && [ "${{ steps.compare.outputs.baseline_missing }}" != "true" ]; then
             echo "comparison_failed=true" >> $GITHUB_OUTPUT
@@ -355,7 +355,7 @@ jobs:
   # Report results (runs after all tests complete)
   report-results:
     needs: [test-preflight-v1beta3, test-preflight-v1beta2, test-supportbundle]
-    if: always() && github.actor != 'dependabot[bot]'
+    if: ${{ !cancelled() && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 5
 
@@ -380,16 +380,38 @@ jobs:
       - name: Reorganize artifacts
         run: |
           # Move artifacts from nested directories to test/output
-          find test/output/test-results-* -type f -exec mv {} test/output/ \;
+          # Use shopt to handle glob patterns that don't match
+          shopt -s nullglob
+          for dir in test/output/test-results-*; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type f -exec mv {} test/output/ \;
+            fi
+          done
           # Clean up empty directories
-          find test/output/test-results-* -type d -empty -delete || true
+          for dir in test/output/test-results-*; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type d -empty -delete || true
+            fi
+          done
+          shopt -u nullglob
 
       - name: Generate summary report
         run: |
-          python3 scripts/generate_summary.py \
-            --reports test/output/diff-report-*.json \
-            --output-file $GITHUB_STEP_SUMMARY \
-            --output-console
+          # Handle case where no reports exist
+          shopt -s nullglob
+          REPORTS=(test/output/diff-report-*.json)
+          shopt -u nullglob
+          
+          if [ ${#REPORTS[@]} -eq 0 ]; then
+            echo "⚠ No comparison reports found - test jobs may have failed before generating reports"
+            echo "## Summary Report" >> $GITHUB_STEP_SUMMARY
+            echo "No comparison reports available. Check individual test job results." >> $GITHUB_STEP_SUMMARY
+          else
+            python3 scripts/generate_summary.py \
+              --reports test/output/diff-report-*.json \
+              --output-file $GITHUB_STEP_SUMMARY \
+              --output-console
+          fi
 
       - name: Check for regressions
         run: |
@@ -397,18 +419,30 @@ jobs:
 
           FAILURES=0
 
-          if [ "${{ needs.test-preflight-v1beta3.result }}" == "failure" ]; then
-            echo "❌ v1beta3 comparison failed"
+          if [ "${{ needs.test-preflight-v1beta3.result }}" == "failure" ] || [ "${{ needs.test-preflight-v1beta3.result }}" == "skipped" ]; then
+            if [ "${{ needs.test-preflight-v1beta3.result }}" == "skipped" ]; then
+              echo "❌ v1beta3 test was skipped (likely due to build failure)"
+            else
+              echo "❌ v1beta3 comparison failed"
+            fi
             FAILURES=$((FAILURES + 1))
           fi
 
-          if [ "${{ needs.test-preflight-v1beta2.result }}" == "failure" ]; then
-            echo "❌ v1beta2 comparison failed"
+          if [ "${{ needs.test-preflight-v1beta2.result }}" == "failure" ] || [ "${{ needs.test-preflight-v1beta2.result }}" == "skipped" ]; then
+            if [ "${{ needs.test-preflight-v1beta2.result }}" == "skipped" ]; then
+              echo "❌ v1beta2 test was skipped (likely due to build failure)"
+            else
+              echo "❌ v1beta2 comparison failed"
+            fi
             FAILURES=$((FAILURES + 1))
           fi
 
-          if [ "${{ needs.test-supportbundle.result }}" == "failure" ]; then
-            echo "❌ Support bundle comparison failed"
+          if [ "${{ needs.test-supportbundle.result }}" == "failure" ] || [ "${{ needs.test-supportbundle.result }}" == "skipped" ]; then
+            if [ "${{ needs.test-supportbundle.result }}" == "skipped" ]; then
+              echo "❌ Support bundle test was skipped (likely due to build failure)"
+            else
+              echo "❌ Support bundle comparison failed"
+            fi
             FAILURES=$((FAILURES + 1))
           fi
 
@@ -422,7 +456,7 @@ jobs:
           fi
 
       - name: Update baselines
-        if: github.event.inputs.update_baselines == 'true' && github.event_name == 'workflow_dispatch'
+        if: ${{ !cancelled() && github.event.inputs.update_baselines == 'true' && github.event_name == 'workflow_dispatch' }}
         run: |
           echo "Updating baselines with current bundles..."
 
