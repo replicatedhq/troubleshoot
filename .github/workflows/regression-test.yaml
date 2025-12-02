@@ -76,7 +76,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -180,7 +180,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -283,7 +283,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -372,7 +372,7 @@ jobs:
         run: pip install pyyaml deepdiff
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: test/output
           pattern: test-results-*
