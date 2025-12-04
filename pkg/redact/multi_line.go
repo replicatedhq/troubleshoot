@@ -126,8 +126,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		}
 
 		if flushLastLine {
-			// Append newline since scanner strip it
-			err = writeBytes(writer, line1, NEW_LINE)
+			err = writeBytes(writer, line1)
 			if err != nil {
 				return
 			}
