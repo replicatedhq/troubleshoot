@@ -159,7 +159,7 @@ func TestHasResourceWithPartialDiscoveryFailure(t *testing.T) {
 			description: "Should return (false, error) when apiLists is nil and discovery error exists",
 		},
 		{
-			name: "empty api resource list with discovery error",
+			name:            "empty api resource list with discovery error",
 			apiResourceList: []*metav1.APIResourceList{},
 			discoveryError: &discovery.ErrGroupDiscoveryFailed{
 				Groups: map[schema.GroupVersion]error{
