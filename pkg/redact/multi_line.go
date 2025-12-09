@@ -169,6 +169,13 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				return
 			}
 		}
+
+		// Propagate non-EOF read errors to the caller
+		// EOF is expected (end of file) and not an error condition
+		// Note: readErr is always non-nil here (loop exited), but we only propagate non-EOF errors
+		if readErr != io.EOF {
+			err = readErr
+		}
 	}()
 	return out
 }
