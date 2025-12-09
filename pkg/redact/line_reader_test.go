@@ -299,4 +299,3 @@ func BenchmarkLineReader(b *testing.B) {
 		}
 	}
 }
-

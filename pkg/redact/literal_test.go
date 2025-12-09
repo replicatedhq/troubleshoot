@@ -333,4 +333,3 @@ func TestLiteralRedactor_PartialMatchNotReplaced(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "***HIDDEN*** ***HIDDEN***ive ***HIDDEN***s", string(result))
 }
-

@@ -337,6 +337,9 @@ func TestNewSingleLineRedactor(t *testing.T) {
 
 // Test 2.15: Binary file (no newlines) → unchanged
 func TestSingleLineRedactor_BinaryFile(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	// Binary content with no newlines
 	binaryData := []byte{0x01, 0x02, 0x03, 0x04, 0x00, 0xFF, 0xFE, 0xAB, 0xCD}
 
@@ -355,6 +358,9 @@ func TestSingleLineRedactor_BinaryFile(t *testing.T) {
 
 // Test 2.16: Text file with \n → preserved
 func TestSingleLineRedactor_TextFileWithNewline(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "hello world\n"
 
 	redactor, err := NewSingleLineRedactor(
@@ -372,6 +378,9 @@ func TestSingleLineRedactor_TextFileWithNewline(t *testing.T) {
 
 // Test 2.17: Text file without \n → preserved
 func TestSingleLineRedactor_TextFileWithoutNewline(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "hello world"
 
 	redactor, err := NewSingleLineRedactor(
@@ -389,6 +398,9 @@ func TestSingleLineRedactor_TextFileWithoutNewline(t *testing.T) {
 
 // Test 2.18: Empty file → unchanged
 func TestSingleLineRedactor_EmptyFile(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := ""
 
 	redactor, err := NewSingleLineRedactor(
@@ -406,6 +418,9 @@ func TestSingleLineRedactor_EmptyFile(t *testing.T) {
 
 // Test 2.19: Single line with secret → redacted correctly
 func TestSingleLineRedactor_SingleLineWithSecret(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "password=secret123"
 
 	redactor, err := NewSingleLineRedactor(
@@ -423,6 +438,9 @@ func TestSingleLineRedactor_SingleLineWithSecret(t *testing.T) {
 
 // Test 2.20: Multiple lines with secrets → all redacted
 func TestSingleLineRedactor_MultipleLinesWithSecrets(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "password=secret1\npassword=secret2\npassword=secret3\n"
 
 	redactor, err := NewSingleLineRedactor(
@@ -441,6 +459,9 @@ func TestSingleLineRedactor_MultipleLinesWithSecrets(t *testing.T) {
 
 // Test 2.21: Scan pattern filters correctly
 func TestSingleLineRedactor_ScanPatternFilters(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "password=secret\nusername=admin\n"
 
 	redactor, err := NewSingleLineRedactor(
@@ -462,6 +483,9 @@ func TestSingleLineRedactor_ScanPatternFilters(t *testing.T) {
 
 // Test 2.22: File with only one newline \n → one newline out
 func TestSingleLineRedactor_OnlyNewline(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	input := "\n"
 
 	redactor, err := NewSingleLineRedactor(
@@ -479,6 +503,9 @@ func TestSingleLineRedactor_OnlyNewline(t *testing.T) {
 
 // Test 2.23: Mixed binary/text content
 func TestSingleLineRedactor_MixedContent(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	// Binary data with embedded newline
 	input := []byte{0x01, 0x02, '\n', 0x03, 0x04}
 
@@ -497,6 +524,9 @@ func TestSingleLineRedactor_MixedContent(t *testing.T) {
 
 // Test 2.24: Large binary file (1MB, no newlines) → preserved
 func TestSingleLineRedactor_LargeBinaryFile(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
 	// Create 1MB of binary data
 	largeData := make([]byte, 1024*1024)
 	for i := range largeData {

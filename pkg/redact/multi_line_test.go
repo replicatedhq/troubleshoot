@@ -157,7 +157,7 @@ func Test_writeBytes(t *testing.T) {
 func TestMultiLineRedactor_BinaryFile(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	// Binary content with no newlines - the bug that caused 2 extra bytes
 	binaryData := []byte{0x01, 0x02, 0x03, 0x04, 0x00, 0xFF, 0xFE, 0xAB, 0xCD}
 
@@ -179,7 +179,7 @@ func TestMultiLineRedactor_BinaryFile(t *testing.T) {
 func TestMultiLineRedactor_SingleLineWithNewline(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := "single line\n"
 
 	redactor, err := NewMultiLineRedactor(
@@ -200,7 +200,7 @@ func TestMultiLineRedactor_SingleLineWithNewline(t *testing.T) {
 func TestMultiLineRedactor_SingleLineWithoutNewline(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := "single line"
 
 	redactor, err := NewMultiLineRedactor(
@@ -221,7 +221,7 @@ func TestMultiLineRedactor_SingleLineWithoutNewline(t *testing.T) {
 func TestMultiLineRedactor_EmptyFile(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := ""
 
 	redactor, err := NewMultiLineRedactor(
@@ -242,7 +242,7 @@ func TestMultiLineRedactor_EmptyFile(t *testing.T) {
 func TestMultiLineRedactor_TwoLinesMatch(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := `"name": "PASSWORD"
 "value": "secret123"`
 
@@ -266,7 +266,7 @@ func TestMultiLineRedactor_TwoLinesMatch(t *testing.T) {
 func TestMultiLineRedactor_TwoLinesNoMatch(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := `"name": "USERNAME"
 "value": "admin"`
 
@@ -290,7 +290,7 @@ func TestMultiLineRedactor_TwoLinesNoMatch(t *testing.T) {
 func TestMultiLineRedactor_MultiplePairs(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := `"name": "PASSWORD"
 "value": "secret1"
 "name": "TOKEN"
@@ -324,7 +324,7 @@ func TestMultiLineRedactor_MultiplePairs(t *testing.T) {
 func TestMultiLineRedactor_ThreeLines(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	input := `"name": "PASSWORD"
 "value": "secret"
 unpaired line`
@@ -350,7 +350,7 @@ unpaired line`
 func TestMultiLineRedactor_LargeFile(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	var input strings.Builder
 	for i := 0; i < 1000; i++ {
 		input.WriteString(`"name": "PASSWORD"` + "\n")
@@ -368,7 +368,7 @@ func TestMultiLineRedactor_LargeFile(t *testing.T) {
 	result, err := io.ReadAll(out)
 
 	require.NoError(t, err)
-	
+
 	// Verify all secrets were redacted
 	require.NotContains(t, string(result), `"value": "secret"`)
 	require.Contains(t, string(result), `"value": "***HIDDEN***"`)
