@@ -1,7 +1,6 @@
 package redact
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -39,6 +38,13 @@ func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefau
 	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
+// Redact processes the input reader line-by-line, applying redaction patterns.
+
+// Unlike the previous implementation using bufio.Scanner, this now uses LineReader
+// to preserve the exact newline structure of the input file. Lines that originally
+// ended with \n will have \n added back, while lines without \n (like the last line
+// of a file without a trailing newline, or binary files) will not have \n added.
+// This ensures binary files and text files without trailing newlines are not corrupted.
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 
@@ -48,7 +54,8 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if err == nil || err == io.EOF {
 				writer.Close()
 			} else {
-				if err == bufio.ErrTooLong {
+				// Check if error is about line exceeding maximum size
+				if err != nil && bytes.Contains([]byte(err.Error()), []byte("exceeds maximum size")) {
 					s := fmt.Sprintf("Error redacting %q. A line in the file exceeded %d MB max length", path, constants.SCANNER_MAX_SIZE/1024/1024)
 					klog.V(2).Info(s)
 				} else {
@@ -58,68 +65,89 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
-		buf := make([]byte, constants.BUF_INIT_SIZE)
-		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
-
+		// Use LineReader instead of bufio.Scanner to track newline presence
+		lineReader := NewLineReader(input)
 		tokenizer := GetGlobalTokenizer()
 		lineNum := 0
-		for scanner.Scan() {
-			lineNum++
-			line := scanner.Bytes()
 
-			// is scan is not nil, then check if line matches scan by lowercasing it
+		for {
+			line, hadNewline, readErr := lineReader.ReadLine()
+
+			// Handle EOF with no content - we're done
+			if readErr == io.EOF && len(line) == 0 {
+				break
+			}
+
+			// We have content to process
+			lineNum++
+
+			// Determine if we should redact this line
+			shouldRedact := true
+
+			// Pre-filter: if scan is not nil, check if line matches scan by lowercasing it
 			if r.scan != nil {
 				lowerLine := bytes.ToLower(line)
 				if !r.scan.Match(lowerLine) {
-					// Append newline since scanner strips it
-					err = writeBytes(writer, line, NEW_LINE)
-					if err != nil {
-						return
-					}
-					continue
+					shouldRedact = false
 				}
 			}
 
-			// if scan matches, but re does not, do not redact
-			if !r.re.Match(line) {
-				// Append newline since scanner strips it
-				err = writeBytes(writer, line, NEW_LINE)
-				if err != nil {
-					return
-				}
-				continue
+			// Check if line matches the main redaction pattern
+			if shouldRedact && !r.re.Match(line) {
+				shouldRedact = false
 			}
 
-			var clean []byte
-			if tokenizer.IsEnabled() {
-				// Use tokenized replacement - context comes from the redactor name which often indicates the secret type
-				context := r.redactName
-				clean = getTokenizedReplacementPatternWithPath(r.re, line, context, r.filePath)
+			// Process the line (redact or pass through)
+			var outputLine []byte
+			if shouldRedact {
+				// Line matches - perform redaction
+				if tokenizer.IsEnabled() {
+					// Use tokenized replacement - context comes from the redactor name
+					context := r.redactName
+					outputLine = getTokenizedReplacementPatternWithPath(r.re, line, context, r.filePath)
+				} else {
+					// Use original masking behavior
+					substStr := []byte(getReplacementPattern(r.re, r.maskText))
+					outputLine = r.re.ReplaceAll(line, substStr)
+				}
+
+				// Track redaction if content changed
+				if !bytes.Equal(outputLine, line) {
+					addRedaction(Redaction{
+						RedactorName:      r.redactName,
+						CharactersRemoved: len(line) - len(outputLine),
+						Line:              lineNum,
+						File:              r.filePath,
+						IsDefaultRedactor: r.isDefault,
+					})
+				}
 			} else {
-				// Use original masking behavior
-				substStr := []byte(getReplacementPattern(r.re, r.maskText))
-				clean = r.re.ReplaceAll(line, substStr)
+				// No match - use original line
+				outputLine = line
 			}
-			// Append newline since scanner strips it
-			err = writeBytes(writer, clean, NEW_LINE)
+
+			// Write the line
+			err = writeBytes(writer, outputLine)
 			if err != nil {
 				return
 			}
-
-			// if clean is not equal to line, a redaction was performed
-			if !bytes.Equal(clean, line) {
-				addRedaction(Redaction{
-					RedactorName:      r.redactName,
-					CharactersRemoved: len(line) - len(clean),
-					Line:              lineNum,
-					File:              r.filePath,
-					IsDefaultRedactor: r.isDefault,
-				})
+			// Only add newline if original line had one
+			if hadNewline {
+				err = writeBytes(writer, NEW_LINE)
+				if err != nil {
+					return
+				}
 			}
-		}
-		if scanErr := scanner.Err(); scanErr != nil {
-			err = scanErr
+
+			// Check if we hit EOF after processing this line
+			if readErr == io.EOF {
+				break
+			}
+			// Check for non-EOF errors
+			if readErr != nil {
+				err = readErr
+				return
+			}
 		}
 	}()
 	return out
