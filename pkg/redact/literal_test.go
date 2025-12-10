@@ -13,7 +13,7 @@ import (
 func TestLiteralRedactor_BasicRedaction(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
-	
+
 	tests := []struct {
 		name        string
 		match       string
