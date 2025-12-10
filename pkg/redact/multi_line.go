@@ -70,19 +70,21 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		line1, nl1, line2, nl2, readErr := getNextTwoLines(lineReader, nil)
 
 		// Handle case where we can't read 2 lines (empty file or single line)
-		if readErr != nil && len(line1) == 0 {
+		// Note: We check line1 == nil (not len(line1) == 0) because:
+		// - nil means truly empty file with no content
+		// - []byte{} (len==0) means an empty line that had a newline (e.g., "\n")
+		if readErr != nil && line1 == nil {
 			// Empty file - nothing to write
 			return
 		}
 
 		if readErr != nil {
-			// Only 1 line available - write it and exit
+			// Only 1 line available (or empty line with newline) - write it and exit
 			// FIX: This is the bug fix - only add newline if original had one
-			if len(line1) > 0 {
-				err = writeLine(writer, line1, nl1)
-				if err != nil {
-					return
-				}
+			// Also handles empty lines (line1 == []byte{} with nl1 == true)
+			err = writeLine(writer, line1, nl1)
+			if err != nil {
+				return
 			}
 			return
 		}
