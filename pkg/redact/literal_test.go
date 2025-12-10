@@ -11,9 +11,6 @@ import (
 
 // Test basic literal redaction functionality
 func TestLiteralRedactor_BasicRedaction(t *testing.T) {
-	ResetRedactionList()
-	defer ResetRedactionList()
-
 	tests := []struct {
 		name        string
 		match       string
@@ -54,6 +51,9 @@ func TestLiteralRedactor_BasicRedaction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ResetRedactionList()
+			defer ResetRedactionList()
+			
 			redactor := literalString([]byte(tt.match), "testfile", tt.name)
 
 			out := redactor.Redact(bytes.NewReader([]byte(tt.inputString)), "")
