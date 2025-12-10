@@ -164,8 +164,9 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		// After loop exits (readErr != nil), check if we have an unwritten line1
 		// This happens in two cases:
 		// 1. flushLastLine=true: line1 was advanced but not written (scan/re1 didn't match)
-		// 2. len(line1) > 0: we read line1 but couldn't get line2 (unpaired line at end)
-		if flushLastLine || len(line1) > 0 {
+		// 2. line1 != nil: we read line1 but couldn't get line2 (unpaired line at end)
+		// Note: We check line1 != nil (not len(line1) > 0) to handle empty lines ([]byte{})
+		if flushLastLine || line1 != nil {
 			err = writeLine(writer, line1, nl1)
 			if err != nil {
 				return
