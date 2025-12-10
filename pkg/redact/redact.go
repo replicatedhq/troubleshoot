@@ -104,6 +104,10 @@ func GetRedactionList() RedactionList {
 }
 
 func ResetRedactionList() {
+	// Wait for all pending redaction goroutines to complete before resetting
+	// This prevents race conditions where goroutines write to the map after reset
+	pendingRedactions.Wait()
+
 	redactionListMut.Lock()
 	defer redactionListMut.Unlock()
 	allRedactions = RedactionList{

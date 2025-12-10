@@ -1724,6 +1724,7 @@ func Test_Redactors(t *testing.T) {
 
 	t.Run("test default redactors", func(t *testing.T) {
 		req := require.New(t)
+		ResetRedactionList() // Ensure clean state before test
 		redactors, err := getRedactors("testpath")
 		req.NoError(err)
 

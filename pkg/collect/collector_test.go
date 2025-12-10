@@ -44,8 +44,7 @@ pwd=somethinggoeshere;`,
 			want: map[string]string{
 				"data/datacollectorname": ` 123
 another***HIDDEN***here
-pwd=***HIDDEN***;
-`,
+pwd=***HIDDEN***;`,
 			},
 		},
 		{
@@ -78,8 +77,7 @@ pwd=somethinggoeshere;`,
 			want: map[string]string{
 				"data/datacollectorname": `abc 123
 another***HIDDEN***here
-pwd=***HIDDEN***;
-`,
+pwd=***HIDDEN***;`,
 			},
 		},
 		{
@@ -112,8 +110,7 @@ pwd=somethinggoeshere;`,
 			want: map[string]string{
 				"data/datacollectorname": `abc 123
 another line here
-pwd=***HIDDEN***;
-`,
+pwd=***HIDDEN***;`,
 			},
 		},
 		{
@@ -149,8 +146,7 @@ pwd=somethinggoeshere;`,
 			want: map[string]string{
 				"data/datacollectorname": `abc 123
 another***HIDDEN***here
-pwd=***HIDDEN***;
-`,
+pwd=***HIDDEN***;`,
 			},
 		},
 		{
@@ -186,8 +182,7 @@ pwd=somethinggoeshere;`,
 			want: map[string]string{
 				"data/data/collectorname": `***HIDDEN*** ***HIDDEN***
 ***HIDDEN*** line here
-pwd=***HIDDEN***;
-`,
+pwd=***HIDDEN***;`,
 			},
 		},
 		{
@@ -213,8 +208,7 @@ another line here`,
 			},
 			want: map[string]string{
 				"data/datacollectorname": `abc 123
-another line here
-`,
+another line here`,
 			},
 		},
 		{
@@ -249,8 +243,7 @@ abc`,
 abc
 123
 xyz123
-abc
-`,
+abc`,
 			},
 		},
 		{
