@@ -596,11 +596,11 @@ func TestSingleLineRedactor_WindowsLineEndings(t *testing.T) {
 
 	require.NoError(t, err)
 	// Windows line endings should be preserved exactly
-	require.Equal(t, "line1\r\nline2\r\nline3\r\n", string(result), 
+	require.Equal(t, "line1\r\nline2\r\nline3\r\n", string(result),
 		"Windows CRLF line endings should be preserved, not converted to LF")
 }
 
-// Test: Windows CRLF with redaction  
+// Test: Windows CRLF with redaction
 func TestSingleLineRedactor_WindowsLineEndingsWithRedaction(t *testing.T) {
 	ResetRedactionList()
 	defer ResetRedactionList()
