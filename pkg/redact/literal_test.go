@@ -73,7 +73,7 @@ func TestLiteralRedactor_BinaryFile(t *testing.T) {
 	// Binary content with no newlines and no match
 	binaryData := []byte{0x01, 0x02, 0x03, 0x04, 0x00, 0xFF, 0xFE, 0xAB, 0xCD}
 
-	redactor := literalString([]byte("notfound"), "testfile", "test")
+	redactor := literalString([]byte("notfound"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader(binaryData), "test.bin")
 	result, err := io.ReadAll(out)
@@ -90,7 +90,7 @@ func TestLiteralRedactor_BinaryFileWithMatch(t *testing.T) {
 	// Binary content with a literal match (0xFF 0xFE sequence)
 	binaryData := []byte{0x01, 0x02, 0xFF, 0xFE, 0x03, 0x04}
 
-	redactor := literalString([]byte{0xFF, 0xFE}, "testfile", "test")
+	redactor := literalString([]byte{0xFF, 0xFE}, "testfile", t.Name())
 
 	// We need to mock maskTextBytes for this test to work predictably
 	// For now, test that no newlines are added
@@ -111,7 +111,7 @@ func TestLiteralRedactor_TextWithTrailingNewline(t *testing.T) {
 
 	input := "hello world\n"
 
-	redactor := literalString([]byte("xyz"), "testfile", "test")
+	redactor := literalString([]byte("xyz"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -127,7 +127,7 @@ func TestLiteralRedactor_TextWithoutTrailingNewline(t *testing.T) {
 
 	input := "hello world"
 
-	redactor := literalString([]byte("xyz"), "testfile", "test")
+	redactor := literalString([]byte("xyz"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -143,7 +143,7 @@ func TestLiteralRedactor_EmptyFile(t *testing.T) {
 
 	input := ""
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -159,7 +159,7 @@ func TestLiteralRedactor_LiteralMatch(t *testing.T) {
 
 	input := "password=secret123"
 
-	redactor := literalString([]byte("secret123"), "testfile", "test")
+	redactor := literalString([]byte("secret123"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -175,7 +175,7 @@ func TestLiteralRedactor_MultipleOccurrences(t *testing.T) {
 
 	input := "secret here and secret there and secret everywhere"
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -191,7 +191,7 @@ func TestLiteralRedactor_MultipleOccurrencesMultiline(t *testing.T) {
 
 	input := "line1 secret\nline2 secret\nline3 secret\n"
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -212,7 +212,7 @@ func TestLiteralRedactor_Tokenization(t *testing.T) {
 
 	input := "password=secret123"
 
-	redactor := literalString([]byte("secret123"), "testfile", "test")
+	redactor := literalString([]byte("secret123"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -251,7 +251,7 @@ func TestLiteralRedactor_BackwardCompatibility(t *testing.T) {
 
 	input := "line1 secret\nline2 secret\nline3\n"
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -268,7 +268,7 @@ func TestLiteralRedactor_LastLineWithoutNewline(t *testing.T) {
 
 	input := "line1\nline2 secret"
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -285,7 +285,7 @@ func TestLiteralRedactor_EmptyLines(t *testing.T) {
 
 	input := "\n\n\n"
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
@@ -307,7 +307,7 @@ func TestLiteralRedactor_LargeFile(t *testing.T) {
 		input.WriteString(" here\n")
 	}
 
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(strings.NewReader(input.String()), "test.txt")
 	result, err := io.ReadAll(out)
@@ -325,7 +325,7 @@ func TestLiteralRedactor_PartialMatchNotReplaced(t *testing.T) {
 	input := "secret secretive secrets"
 
 	// Should only replace exact literal "secret", not "secretive" or "secrets"
-	redactor := literalString([]byte("secret"), "testfile", "test")
+	redactor := literalString([]byte("secret"), "testfile", t.Name())
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
 	result, err := io.ReadAll(out)
