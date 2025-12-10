@@ -75,6 +75,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		// - []byte{} (len==0) means an empty line that had a newline (e.g., "\n")
 		if readErr != nil && line1 == nil {
 			// Empty file - nothing to write
+			// Propagate non-EOF errors (EOF is expected for empty files)
+			if readErr != io.EOF {
+				err = readErr
+			}
 			return
 		}
 
@@ -85,6 +89,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			err = writeLine(writer, line1, nl1)
 			if err != nil {
 				return
+			}
+			// Propagate non-EOF errors (EOF is expected for single-line files)
+			if readErr != io.EOF {
+				err = readErr
 			}
 			return
 		}
