@@ -226,16 +226,16 @@ func TestLiteralRedactor_Tokenization(t *testing.T) {
 
 // Test 4.19: Redaction count accurate
 func TestLiteralRedactor_RedactionCount(t *testing.T) {
-	// Prevent parallel execution - this test checks global redaction list
-	// which would be polluted by other tests running in parallel
-	// Note: This is a known limitation of the global redaction tracking design
-	
 	ResetRedactionList()
 	defer ResetRedactionList()
 
 	input := "secret here\nsecret there"
 
-	redactor := literalString([]byte("secret"), "testfile", "test-redactor")
+	// Use unique redactor name and filename to avoid pollution from parallel tests
+	uniqueFile := "TestLiteralRedactor_RedactionCount_file"
+	uniqueRedactor := "TestLiteralRedactor_RedactionCount_redactor"
+
+	redactor := literalString([]byte("secret"), uniqueFile, uniqueRedactor)
 
 	out := redactor.Redact(bytes.NewReader([]byte(input)), "")
 	_, err := io.ReadAll(out)
@@ -244,10 +244,8 @@ func TestLiteralRedactor_RedactionCount(t *testing.T) {
 
 	redactions := GetRedactionList()
 	// Two lines, each with one match = 2 redaction events
-	// Note: If this fails with more than 2 entries, other tests are polluting
-	// the global redaction list due to parallel execution
-	require.GreaterOrEqual(t, len(redactions.ByRedactor["test-redactor"]), 2, "Should record at least 2 redactions")
-	require.GreaterOrEqual(t, len(redactions.ByFile["testfile"]), 2, "Should record at least 2 redactions for file")
+	require.Len(t, redactions.ByRedactor[uniqueRedactor], 2, "Should record 2 redactions (one per line)")
+	require.Len(t, redactions.ByFile[uniqueFile], 2, "Should record 2 redactions for file")
 }
 
 // Test 4.20: Backward compatibility - existing behavior preserved for text with newlines
