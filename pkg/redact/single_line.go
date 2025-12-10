@@ -1,7 +1,9 @@
 package redact
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -55,7 +57,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				writer.Close()
 			} else {
 				// Check if error is about line exceeding maximum size
-				if err != nil && bytes.Contains([]byte(err.Error()), []byte("exceeds maximum size")) {
+				if errors.Is(err, bufio.ErrTooLong) {
 					s := fmt.Sprintf("Error redacting %q. A line in the file exceeded %d MB max length", path, constants.SCANNER_MAX_SIZE/1024/1024)
 					klog.V(2).Info(s)
 				} else {

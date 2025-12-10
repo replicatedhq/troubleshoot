@@ -356,6 +356,61 @@ func TestSingleLineRedactor_BinaryFile(t *testing.T) {
 	require.Equal(t, binaryData, result, "Binary file should be unchanged")
 }
 
+// Test: Binary file with every single byte value (0x00 -> 0xFF)
+func TestSingleLineRedactor_AllSingleByteValues(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Create binary data with every possible byte value
+	binaryData := make([]byte, 256)
+	for i := 0; i < 256; i++ {
+		binaryData[i] = byte(i)
+	}
+
+	redactor, err := NewSingleLineRedactor(
+		LineRedactor{regex: `secret`},
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader(binaryData), "test.bin")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	require.Equal(t, binaryData, result, "Binary file with all byte values should be unchanged")
+	require.Len(t, result, 256, "Should preserve all 256 bytes")
+}
+
+// Test: Binary file with every two-byte combination (0x00+0x00 -> 0xFF+0xFF)
+func TestSingleLineRedactor_AllTwoByteValues(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Create binary data with all 65,536 two-byte combinations (128KB)
+	binaryData := make([]byte, 256*256*2)
+	pos := 0
+	for i := 0; i < 256; i++ {
+		for j := 0; j < 256; j++ {
+			binaryData[pos] = byte(i)
+			binaryData[pos+1] = byte(j)
+			pos += 2
+		}
+	}
+
+	redactor, err := NewSingleLineRedactor(
+		LineRedactor{regex: `secret`},
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader(binaryData), "test.bin")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	require.Equal(t, binaryData, result, "Binary file with all two-byte combinations should be unchanged")
+	require.Len(t, result, 256*256*2, "Should preserve all 131,072 bytes (64k combinations)")
+}
+
 // Test 2.16: Text file with \n → preserved
 func TestSingleLineRedactor_TextFileWithNewline(t *testing.T) {
 	ResetRedactionList()
@@ -520,6 +575,55 @@ func TestSingleLineRedactor_MixedContent(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, input, result, "Mixed content should be preserved")
+}
+
+// Test: Windows CRLF (\r\n) line endings preserved
+func TestSingleLineRedactor_WindowsLineEndings(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Windows-style line endings with no secrets
+	input := "line1\r\nline2\r\nline3\r\n"
+
+	redactor, err := NewSingleLineRedactor(
+		LineRedactor{regex: `secret`},
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	// Windows line endings should be preserved exactly
+	require.Equal(t, "line1\r\nline2\r\nline3\r\n", string(result), 
+		"Windows CRLF line endings should be preserved, not converted to LF")
+}
+
+// Test: Windows CRLF with redaction  
+func TestSingleLineRedactor_WindowsLineEndingsWithRedaction(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Windows-style line endings with a secret
+	// Note: LineReader splits on \n, so line content includes \r
+	input := "password=secret123\r\nusername=admin\r\n"
+
+	// Use a regex that doesn't capture the \r
+	redactor, err := NewSingleLineRedactor(
+		LineRedactor{regex: `(password=)(?P<mask>[^\r\n]+)`},
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader([]byte(input)), "test.txt")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	// \r\n should be preserved: regex doesn't capture \r, so it stays in output
+	expected := "password=***HIDDEN***\r\nusername=admin\r\n"
+	require.Equal(t, expected, string(result),
+		"Windows CRLF should be preserved - \\r not captured by regex, \\n added by LineReader")
 }
 
 // Test 2.24: Large binary file (1MB, no newlines) → preserved

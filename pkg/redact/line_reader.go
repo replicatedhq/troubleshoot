@@ -2,7 +2,6 @@ package redact
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -99,7 +98,7 @@ func (lr *LineReader) ReadLine() ([]byte, bool, error) {
 		// Check buffer limit to prevent memory exhaustion
 		// This is especially important for binary files without newlines
 		if len(line) > constants.SCANNER_MAX_SIZE {
-			return nil, false, fmt.Errorf("line exceeds maximum size of %d bytes", constants.SCANNER_MAX_SIZE)
+			return nil, false, bufio.ErrTooLong
 		}
 	}
 }

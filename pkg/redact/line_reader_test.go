@@ -1,6 +1,7 @@
 package redact
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"strings"
@@ -140,7 +141,7 @@ func TestLineReader_LineExceedingMaxSize(t *testing.T) {
 	assert.Nil(t, line)
 	assert.False(t, hadNewline)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "exceeds maximum size")
+	assert.ErrorIs(t, err, bufio.ErrTooLong)
 }
 
 // Test 1.15: File with only \n → ([], true, nil)

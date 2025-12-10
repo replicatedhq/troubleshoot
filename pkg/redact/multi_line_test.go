@@ -175,6 +175,63 @@ func TestMultiLineRedactor_BinaryFile(t *testing.T) {
 	require.Equal(t, binaryData, result, "Binary file should be unchanged (no extra newlines)")
 }
 
+// Test: Binary file with every single byte value (0x00 -> 0xFF)
+func TestMultiLineRedactor_AllSingleByteValues(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Create binary data with every possible byte value
+	binaryData := make([]byte, 256)
+	for i := 0; i < 256; i++ {
+		binaryData[i] = byte(i)
+	}
+
+	redactor, err := NewMultiLineRedactor(
+		LineRedactor{regex: `"name":`},
+		`"value":`,
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader(binaryData), "test.bin")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	require.Equal(t, binaryData, result, "Binary file with all byte values should be unchanged")
+	require.Len(t, result, 256, "Should preserve all 256 bytes")
+}
+
+// Test: Binary file with every two-byte combination (0x00+0x00 -> 0xFF+0xFF)
+func TestMultiLineRedactor_AllTwoByteValues(t *testing.T) {
+	ResetRedactionList()
+	defer ResetRedactionList()
+
+	// Create binary data with all 65,536 two-byte combinations (128KB)
+	binaryData := make([]byte, 256*256*2)
+	pos := 0
+	for i := 0; i < 256; i++ {
+		for j := 0; j < 256; j++ {
+			binaryData[pos] = byte(i)
+			binaryData[pos+1] = byte(j)
+			pos += 2
+		}
+	}
+
+	redactor, err := NewMultiLineRedactor(
+		LineRedactor{regex: `"name":`},
+		`"value":`,
+		MASK_TEXT, "testfile", t.Name(), false,
+	)
+	require.NoError(t, err)
+
+	out := redactor.Redact(bytes.NewReader(binaryData), "test.bin")
+	result, err := io.ReadAll(out)
+
+	require.NoError(t, err)
+	require.Equal(t, binaryData, result, "Binary file with all two-byte combinations should be unchanged")
+	require.Len(t, result, 256*256*2, "Should preserve all 131,072 bytes (64k combinations)")
+}
+
 // Test 3.17: Single line with \n → unchanged
 func TestMultiLineRedactor_SingleLineWithNewline(t *testing.T) {
 	ResetRedactionList()
