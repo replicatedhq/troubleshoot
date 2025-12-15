@@ -59,7 +59,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: make generate preflight
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: preflight
           path: bin/preflight
@@ -89,7 +89,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: make generate support-bundle
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: support-bundle
           path: bin/support-bundle
