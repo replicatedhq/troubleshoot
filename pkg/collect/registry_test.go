@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"go.podman.io/image/v5/transports/alltransports"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
+	"go.podman.io/image/v5/transports/alltransports"
 	"k8s.io/client-go/rest"
 )
 
