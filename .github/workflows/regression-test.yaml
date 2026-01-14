@@ -38,7 +38,7 @@ jobs:
           ./bin/support-bundle version
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries-${{ github.run_id }}
           path: |
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-v1beta3-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -235,7 +235,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-v1beta2-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -335,7 +335,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-supportbundle-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
