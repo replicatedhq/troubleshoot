@@ -12,11 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/kubernetes/pkg/util/taints"
 
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 )
 
 type AnalyzeNodeResources struct {
@@ -453,7 +453,7 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 	}
 
 	if filters.Taint != nil {
-		return taints.TaintExists(node.Spec.Taints, filters.Taint), nil
+		return k8sutil.TaintExists(node.Spec.Taints, filters.Taint), nil
 	}
 
 	if filters.CPUArchitecture != "" {
