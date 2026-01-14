@@ -59,7 +59,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: make generate preflight
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: preflight
           path: bin/preflight
@@ -74,7 +74,7 @@ jobs:
         with:
           version: v1.31.2-k3s1
       - name: Download preflight binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: preflight
           path: bin/
@@ -89,7 +89,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: make generate support-bundle
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: support-bundle
           path: bin/support-bundle
@@ -104,7 +104,7 @@ jobs:
         with:
           version: v1.31.2-k3s1
       - name: Download support bundle binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: support-bundle
           path: bin/
@@ -118,13 +118,13 @@ jobs:
      steps:
       - uses: actions/checkout@v6
       - name: Download support bundle binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: support-bundle
           path: bin/
       - run: chmod +x bin/support-bundle
       - name: Download preflight binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: preflight
           path: bin/

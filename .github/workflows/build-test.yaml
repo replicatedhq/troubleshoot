@@ -98,7 +98,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: make build
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: bin/
@@ -132,7 +132,7 @@ jobs:
         with:
           version: v1.31.2-k3s1
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: binaries
           path: bin/

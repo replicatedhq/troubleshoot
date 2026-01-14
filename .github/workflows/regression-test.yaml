@@ -38,7 +38,7 @@ jobs:
           ./bin/support-bundle version
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binaries-${{ github.run_id }}
           path: |
@@ -76,7 +76,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-v1beta3-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -180,7 +180,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -235,7 +235,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-v1beta2-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -283,7 +283,7 @@ jobs:
           kubectl get pods --all-namespaces
 
       - name: Download binaries
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: binaries-${{ github.run_id }}
           path: bin/
@@ -335,7 +335,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-supportbundle-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -372,7 +372,7 @@ jobs:
         run: pip install pyyaml deepdiff
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: test/output
           pattern: test-results-*
