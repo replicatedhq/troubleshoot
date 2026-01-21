@@ -393,6 +393,11 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), bytes.NewBuffer(volumeAttachments))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), marshalErrors(volumeAttachmentsErrors))
 
+	// Certificate Signing Requests
+	csrs, csrsErrors := certificateSigningRequests(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CERTIFICATE_SIGNING_REQUESTS)), bytes.NewBuffer(csrs))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CERTIFICATE_SIGNING_REQUESTS)), marshalErrors(csrsErrors))
+
 	// ConfigMaps
 	configMaps, configMapsErrors := configMaps(ctx, client, namespaceNames)
 	for k, v := range configMaps {
@@ -2122,6 +2127,32 @@ func volumeAttachments(ctx context.Context, client kubernetes.Interface) ([]byte
 	}
 
 	b, err := json.MarshalIndent(volumeAttachments, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func certificateSigningRequests(ctx context.Context, client kubernetes.Interface) ([]byte, []string) {
+	csrs, err := client.CertificatesV1().CertificateSigningRequests().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(csrs, scheme.Scheme)
+	if err == nil {
+		csrs.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range csrs.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			csrs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(csrs, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
