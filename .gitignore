@@ -55,4 +55,4 @@ sbom/
 /troubleshoot-test
 cmd/troubleshoot/troubleshoot
 cmd/*/troubleshoot
-/support-bundle
+/support-bundle/.worktrees/
