@@ -3,6 +3,7 @@ package collect
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	certificatesv1 "k8s.io/api/certificates/v1"
 	v1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -18,11 +20,13 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apixfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	testdynamicclient "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/yaml"
 )
 
@@ -693,6 +697,81 @@ func createTestPodDisruptionBudgetsV1beta1(client kubernetes.Interface, pdbNames
 			if err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func Test_CertificateSigningRequests(t *testing.T) {
+	tests := []struct {
+		name     string
+		csrNames []string
+	}{
+		{
+			name:     "single certificate signing request",
+			csrNames: []string{"test-csr"},
+		},
+		{
+			name:     "multiple certificate signing requests",
+			csrNames: []string{"test-csr-1", "test-csr-2", "test-csr-3"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestCertificateSigningRequests(client, tt.csrNames)
+			assert.NoError(t, err)
+
+			csrs, csrErrors := certificateSigningRequests(ctx, client)
+			assert.Empty(t, csrErrors)
+			assert.NotEmpty(t, csrs)
+
+			var csrList certificatesv1.CertificateSigningRequestList
+			err = json.Unmarshal(csrs, &csrList)
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.csrNames), len(csrList.Items))
+			for _, csr := range csrList.Items {
+				assert.Contains(t, tt.csrNames, csr.ObjectMeta.Name)
+			}
+		})
+	}
+}
+
+func Test_CertificateSigningRequests_PermissionDenied(t *testing.T) {
+	client := testclient.NewSimpleClientset()
+	ctx := context.Background()
+
+	// Add a reactor to simulate permission denied error
+	client.PrependReactor("list", "certificatesigningrequests", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("certificatesigningrequests.certificates.k8s.io is forbidden: User \"system:serviceaccount:default:default\" cannot list resource \"certificatesigningrequests\" in API group \"certificates.k8s.io\" at the cluster scope")
+	})
+
+	csrs, csrErrors := certificateSigningRequests(ctx, client)
+
+	// Verify fail-safe behavior: returns nil data + error string (not panic)
+	assert.Nil(t, csrs)
+	assert.NotEmpty(t, csrErrors)
+	assert.Len(t, csrErrors, 1)
+	// Verify the error is captured as a string
+	assert.IsType(t, "", csrErrors[0])
+	assert.Contains(t, csrErrors[0], "forbidden")
+}
+
+func createTestCertificateSigningRequests(client kubernetes.Interface, csrNames []string) error {
+	for _, csrName := range csrNames {
+		_, err := client.CertificatesV1().CertificateSigningRequests().Create(context.Background(), &certificatesv1.CertificateSigningRequest{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: csrName,
+			},
+			Spec: certificatesv1.CertificateSigningRequestSpec{
+				Request:    []byte("-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----"),
+				SignerName: "kubernetes.io/kube-apiserver-client",
+				Usages:     []certificatesv1.KeyUsage{certificatesv1.UsageClientAuth},
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return err
 		}
 	}
 	return nil
