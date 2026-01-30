@@ -297,6 +297,7 @@ type Analyze struct {
 	Mssql                    *DatabaseAnalyze          `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
+	ClickHouse               *DatabaseAnalyze          `json:"clickhouse,omitempty" yaml:"clickhouse,omitempty"`
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
 	Velero                   *VeleroAnalyze            `json:"velero,omitempty" yaml:"velero,omitempty"`
 	Longhorn                 *LonghornAnalyze          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`

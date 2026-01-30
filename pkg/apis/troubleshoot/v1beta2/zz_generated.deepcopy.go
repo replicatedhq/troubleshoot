@@ -170,6 +170,11 @@ func (in *Analyze) DeepCopyInto(out *Analyze) {
 		*out = new(DatabaseAnalyze)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ClickHouse != nil {
+		in, out := &in.ClickHouse, &out.ClickHouse
+		*out = new(DatabaseAnalyze)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.CephStatus != nil {
 		in, out := &in.CephStatus, &out.CephStatus
 		*out = new(CephStatusAnalyze)
@@ -917,6 +922,11 @@ func (in *Collect) DeepCopyInto(out *Collect) {
 	}
 	if in.Redis != nil {
 		in, out := &in.Redis, &out.Redis
+		*out = new(Database)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.ClickHouse != nil {
+		in, out := &in.ClickHouse, &out.ClickHouse
 		*out = new(Database)
 		(*in).DeepCopyInto(*out)
 	}
