@@ -201,6 +201,9 @@ func getCollectorName(c interface{}) string {
 	case *CollectRedis:
 		collector = "redis"
 		name = v.Collector.CollectorName
+	case *CollectClickhouse:
+		collector = "clickhouse"
+		name = v.Collector.CollectorName
 	case *CollectCollectd:
 		collector = "collectd"
 		name = v.Collector.CollectorName
