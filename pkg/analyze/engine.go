@@ -699,6 +699,10 @@ func (e *DefaultAnalysisEngine) convertAnalyzerToSpec(analyzer *troubleshootv1be
 		spec.Name = "redis"
 		spec.Type = "database"
 		spec.Config["analyzer"] = analyzer.Redis
+	case analyzer.ClickHouse != nil:
+		spec.Name = "clickhouse"
+		spec.Type = "database"
+		spec.Config["analyzer"] = analyzer.ClickHouse
 
 	// ✅ Storage analyzers
 	case analyzer.CephStatus != nil:

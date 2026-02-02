@@ -104,6 +104,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectMysql{collector.Mysql, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Redis != nil:
 		return &CollectRedis{collector.Redis, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.ClickHouse != nil:
+		return &CollectClickHouse{collector.ClickHouse, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Collectd != nil:
 		return &CollectCollectd{collector.Collectd, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Ceph != nil:
@@ -193,6 +195,9 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.CollectorName
 	case *CollectRedis:
 		collector = "redis"
+		name = v.Collector.CollectorName
+	case *CollectClickHouse:
+		collector = "clickhouse"
 		name = v.Collector.CollectorName
 	case *CollectCollectd:
 		collector = "collectd"
