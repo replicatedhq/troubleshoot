@@ -88,8 +88,6 @@ func (c *CollectClickHouse) Collect(progressChan chan<- interface{}) (CollectorR
 			klog.V(2).Infof("ClickHouse ping error: %s", err.Error())
 			databaseConnection.Error = err.Error()
 		} else {
-			databaseConnection.IsConnected = true
-
 			var version string
 			// ClickHouse version query to get major.minor.patch only
 			// version() returns a string in the form: major_version.minor_version.patch_version.number_of_commits_since_the_previous_stable_release. This breaks the semver parsing in the analyzer.
@@ -102,6 +100,7 @@ func (c *CollectClickHouse) Collect(progressChan chan<- interface{}) (CollectorR
 				databaseConnection.Version = "Unknown"
 				databaseConnection.Error = err.Error()
 			} else {
+				databaseConnection.IsConnected = true
 				databaseConnection.Version = version
 			}
 		}
