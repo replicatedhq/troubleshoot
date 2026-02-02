@@ -81,6 +81,13 @@ func convertCollector(
 		v2collector.Redis = db
 	}
 
+	if v3collector.ClickHouse != nil {
+		db, err := convertDatabase(ctx, v3collector.ClickHouse, client, defaultNamespace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickhouse collector: %w", err)
+		}
+		v2collector.ClickHouse = db
+	}
 	// TODO: Add conversion for other collector types as v1beta3 support expands
 
 	return v2collector, nil
