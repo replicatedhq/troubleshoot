@@ -12,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	v1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -768,6 +769,170 @@ func createTestCertificateSigningRequests(client kubernetes.Interface, csrNames 
 				Request:    []byte("-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----"),
 				SignerName: "kubernetes.io/kube-apiserver-client",
 				Usages:     []certificatesv1.KeyUsage{certificatesv1.UsageClientAuth},
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Test_ValidatingWebhookConfigurations(t *testing.T) {
+	tests := []struct {
+		name     string
+		vwcNames []string
+	}{
+		{
+			name:     "single validating webhook configuration",
+			vwcNames: []string{"test-vwc"},
+		},
+		{
+			name:     "multiple validating webhook configurations",
+			vwcNames: []string{"vwc-1", "vwc-2", "vwc-3"},
+		},
+		{
+			name:     "empty list",
+			vwcNames: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestValidatingWebhookConfigurations(client, tt.vwcNames)
+			require.NoError(t, err)
+
+			data, errs := validatingWebhookConfigurations(ctx, client)
+			assert.Empty(t, errs)
+			assert.NotNil(t, data)
+
+			var list admissionregistrationv1.ValidatingWebhookConfigurationList
+			err = json.Unmarshal(data, &list)
+			require.NoError(t, err)
+			assert.Len(t, list.Items, len(tt.vwcNames))
+			for _, item := range list.Items {
+				assert.Contains(t, tt.vwcNames, item.Name)
+			}
+		})
+	}
+}
+
+func Test_ValidatingWebhookConfigurations_PermissionDenied(t *testing.T) {
+	client := testclient.NewSimpleClientset()
+	ctx := context.Background()
+
+	client.PrependReactor("list", "validatingwebhookconfigurations", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("validatingwebhookconfigurations.admissionregistration.k8s.io is forbidden: User \"system:serviceaccount:default:default\" cannot list resource \"validatingwebhookconfigurations\" in API group \"admissionregistration.k8s.io\" at the cluster scope")
+	})
+
+	data, errs := validatingWebhookConfigurations(ctx, client)
+
+	assert.Nil(t, data)
+	require.NotEmpty(t, errs)
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0], "forbidden")
+}
+
+func createTestValidatingWebhookConfigurations(client kubernetes.Interface, names []string) error {
+	for _, name := range names {
+		_, err := client.AdmissionregistrationV1().ValidatingWebhookConfigurations().Create(context.Background(), &admissionregistrationv1.ValidatingWebhookConfiguration{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+			Webhooks: []admissionregistrationv1.ValidatingWebhook{
+				{
+					Name: "test-webhook.example.com",
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: "default",
+							Name:      "webhook-service",
+						},
+					},
+					AdmissionReviewVersions: []string{"v1"},
+				},
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Test_MutatingWebhookConfigurations(t *testing.T) {
+	tests := []struct {
+		name     string
+		mwcNames []string
+	}{
+		{
+			name:     "single mutating webhook configuration",
+			mwcNames: []string{"test-mwc"},
+		},
+		{
+			name:     "multiple mutating webhook configurations",
+			mwcNames: []string{"mwc-1", "mwc-2"},
+		},
+		{
+			name:     "empty list",
+			mwcNames: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestMutatingWebhookConfigurations(client, tt.mwcNames)
+			require.NoError(t, err)
+
+			data, errs := mutatingWebhookConfigurations(ctx, client)
+			assert.Empty(t, errs)
+			assert.NotNil(t, data)
+
+			var list admissionregistrationv1.MutatingWebhookConfigurationList
+			err = json.Unmarshal(data, &list)
+			require.NoError(t, err)
+			assert.Len(t, list.Items, len(tt.mwcNames))
+			for _, item := range list.Items {
+				assert.Contains(t, tt.mwcNames, item.Name)
+			}
+		})
+	}
+}
+
+func Test_MutatingWebhookConfigurations_PermissionDenied(t *testing.T) {
+	client := testclient.NewSimpleClientset()
+	ctx := context.Background()
+
+	client.PrependReactor("list", "mutatingwebhookconfigurations", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("mutatingwebhookconfigurations.admissionregistration.k8s.io is forbidden: User \"system:serviceaccount:default:default\" cannot list resource \"mutatingwebhookconfigurations\" in API group \"admissionregistration.k8s.io\" at the cluster scope")
+	})
+
+	data, errs := mutatingWebhookConfigurations(ctx, client)
+
+	assert.Nil(t, data)
+	require.NotEmpty(t, errs)
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0], "forbidden")
+}
+
+func createTestMutatingWebhookConfigurations(client kubernetes.Interface, names []string) error {
+	for _, name := range names {
+		_, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.Background(), &admissionregistrationv1.MutatingWebhookConfiguration{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+			Webhooks: []admissionregistrationv1.MutatingWebhook{
+				{
+					Name: "test-mutating-webhook.example.com",
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
+							Namespace: "default",
+							Name:      "webhook-service",
+						},
+					},
+					AdmissionReviewVersions: []string{"v1"},
+				},
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
