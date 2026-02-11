@@ -2211,6 +2211,18 @@ func validatingWebhookConfigurations(ctx context.Context, client kubernetes.Inte
 		return nil, []string{err.Error()}
 	}
 
+	gvk, err := apiutil.GVKForObject(validatingWebhookConfigurations, scheme.Scheme)
+	if err == nil {
+		validatingWebhookConfigurations.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range validatingWebhookConfigurations.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			validatingWebhookConfigurations.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
 	b, err := json.MarshalIndent(validatingWebhookConfigurations, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
@@ -2222,6 +2234,18 @@ func mutatingWebhookConfigurations(ctx context.Context, client kubernetes.Interf
 	mutatingWebhookConfigurations, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(mutatingWebhookConfigurations, scheme.Scheme)
+	if err == nil {
+		mutatingWebhookConfigurations.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range mutatingWebhookConfigurations.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			mutatingWebhookConfigurations.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
 	}
 
 	b, err := json.MarshalIndent(mutatingWebhookConfigurations, "", "  ")
