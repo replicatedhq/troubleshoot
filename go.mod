@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/govaluate v1.10.0
 	github.com/cilium/ebpf v0.20.0
-	github.com/containerd/cgroups/v3 v3.1.2
+	github.com/containerd/cgroups/v3 v3.1.3
 	github.com/distribution/distribution/v3 v3.0.0
 	github.com/fatih/color v1.18.0
 	github.com/go-logr/logr v1.4.3
@@ -43,7 +43,7 @@ require (
 	github.com/vmware-tanzu/velero v1.17.2
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/sdk v1.40.0
-	go.podman.io/image/v5 v5.38.0
+	go.podman.io/image/v5 v5.39.1
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	golang.org/x/mod v0.33.0
 	golang.org/x/sync v0.19.0
@@ -134,7 +134,7 @@ require (
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/mistifyio/go-zfs/v4 v4.0.0 // indirect
+	github.com/mistifyio/go-zfs/v3 v3.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -253,7 +253,7 @@ require (
 	github.com/vbatts/tar-split v0.12.2 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.podman.io/storage v1.61.1-0.20260113143440-ec033ce69f13 // indirect
+	go.podman.io/storage v1.62.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.50.0
 	golang.org/x/oauth2 v0.33.0 // indirect
