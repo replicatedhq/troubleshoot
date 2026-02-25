@@ -406,6 +406,16 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CONFIGMAPS)), marshalErrors(configMapsErrors))
 
+	// Validating Webhook Configurations
+	validatingWebhookConfigurations, validatingWebhookConfigurationsErrors := validatingWebhookConfigurations(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_VALIDATING_WEBHOOK_CONFIGURATIONS)), bytes.NewBuffer(validatingWebhookConfigurations))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_VALIDATING_WEBHOOK_CONFIGURATIONS)), marshalErrors(validatingWebhookConfigurationsErrors))
+
+	// Mutating Webhook Configurations
+	mutatingWebhookConfigurations, mutatingWebhookConfigurationsErrors := mutatingWebhookConfigurations(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_MUTATING_WEBHOOK_CONFIGURATIONS)), bytes.NewBuffer(mutatingWebhookConfigurations))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_MUTATING_WEBHOOK_CONFIGURATIONS)), marshalErrors(mutatingWebhookConfigurationsErrors))
+
 	// Replicated License
 	licenseData, licenseErr := replicatedLicense(ctx, client, namespaceNames)
 	if licenseErr == nil {
@@ -2193,6 +2203,56 @@ func configMaps(ctx context.Context, client kubernetes.Interface, namespaces []s
 	}
 
 	return configmapByNamespace, errorsByNamespace
+}
+
+func validatingWebhookConfigurations(ctx context.Context, client kubernetes.Interface) ([]byte, []string) {
+	validatingWebhookConfigurations, err := client.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(validatingWebhookConfigurations, scheme.Scheme)
+	if err == nil {
+		validatingWebhookConfigurations.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range validatingWebhookConfigurations.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			validatingWebhookConfigurations.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(validatingWebhookConfigurations, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	return b, nil
+}
+
+func mutatingWebhookConfigurations(ctx context.Context, client kubernetes.Interface) ([]byte, []string) {
+	mutatingWebhookConfigurations, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(mutatingWebhookConfigurations, scheme.Scheme)
+	if err == nil {
+		mutatingWebhookConfigurations.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range mutatingWebhookConfigurations.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			mutatingWebhookConfigurations.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(mutatingWebhookConfigurations, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	return b, nil
 }
 
 // storeCustomResource stores a custom resource as JSON and YAML

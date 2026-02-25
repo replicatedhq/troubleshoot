@@ -223,10 +223,10 @@ func getCollectorName(c interface{}) string {
 		collector = "dns"
 	case *CollectEtcd:
 		collector = "etcd"
+
 	default:
 		collector = "<none>"
 	}
-
 	if name != "" {
 		return fmt.Sprintf("%s/%s", collector, name)
 	}
