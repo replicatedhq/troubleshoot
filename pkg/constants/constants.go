@@ -40,6 +40,7 @@ const (
 	CLUSTER_RESOURCES_NETWORK_POLICY               = "network-policy"
 	CLUSTER_RESOURCES_RESOURCE_QUOTA               = "resource-quota"
 	CLUSTER_RESOURCES_STORAGE_CLASS                = "storage-classes"
+	CLUSTER_RESOURCES_INGRESS_CLASS                = "ingress-classes"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS  = "custom-resource-definitions"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCES             = "custom-resources"
 	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS           = "image-pull-secrets" // nolint:gosec
