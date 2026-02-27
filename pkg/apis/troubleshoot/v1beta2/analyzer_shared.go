@@ -18,6 +18,12 @@ type StorageClass struct {
 	StorageClassName string     `json:"storageClassName,omitempty" yaml:"storageClassName,omitempty"`
 }
 
+type IngressClass struct {
+	AnalyzeMeta      `json:",inline" yaml:",inline"`
+	Outcomes         []*Outcome `json:"outcomes" yaml:"outcomes"`
+	IngressClassName string     `json:"ingressClassName,omitempty" yaml:"ingressClassName,omitempty"`
+}
+
 type CustomResourceDefinition struct {
 	AnalyzeMeta                  `json:",inline" yaml:",inline"`
 	Outcomes                     []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -276,6 +282,7 @@ type PVCRef struct {
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
+	IngressClass             *IngressClass             `json:"ingressClass,omitempty" yaml:"ingressClass,omitempty"`
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`

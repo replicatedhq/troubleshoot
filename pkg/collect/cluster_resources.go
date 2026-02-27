@@ -276,6 +276,11 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS)), bytes.NewBuffer(storageClasses))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS)), marshalErrors(storageErrors))
 
+	// ingress classes
+	ingressClasses, ingressClassErrors := ingressClasses(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_INGRESS_CLASS)), bytes.NewBuffer(ingressClasses))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_INGRESS_CLASS)), marshalErrors(ingressClassErrors))
+
 	// priority classes
 	priorityClasses, priorityErrors := priorityClasses(ctx, client)
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PRIORITY_CLASS)), bytes.NewBuffer(priorityClasses))
@@ -1110,6 +1115,40 @@ func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]
 	}
 
 	b, err := json.MarshalIndent(storageClasses, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func ingressClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "networking.k8s.io/v1", "IngressClass")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if !ok {
+		return nil, nil
+	}
+
+	ingressClasses, err := client.NetworkingV1().IngressClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(ingressClasses, scheme.Scheme)
+	if err == nil {
+		ingressClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range ingressClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			ingressClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(ingressClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
