@@ -194,6 +194,8 @@ func GetAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeClusterVersion{analyzer: analyzer.ClusterVersion}
 	case analyzer.StorageClass != nil:
 		return &AnalyzeStorageClass{analyzer: analyzer.StorageClass}
+	case analyzer.IngressClass != nil:
+		return &AnalyzeIngressClass{analyzer: analyzer.IngressClass}
 	case analyzer.CustomResourceDefinition != nil:
 		return &AnalyzeCustomResourceDefinition{analyzer: analyzer.CustomResourceDefinition}
 	case analyzer.Ingress != nil:
