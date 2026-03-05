@@ -32,6 +32,7 @@ import (
 type SupportBundleCreateOpts struct {
 	CollectorProgressCallback func(chan interface{}, string)
 	CollectWithoutPermissions bool
+	RemoteHostCollectTimeoutSeconds     int
 	HttpClient                *http.Client
 	KubernetesRestConfig      *rest.Config
 	Namespace                 string

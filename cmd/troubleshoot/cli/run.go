@@ -201,16 +201,17 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	createOpts := supportbundle.SupportBundleCreateOpts{
-		CollectorProgressCallback: collectorCB,
-		CollectWithoutPermissions: v.GetBool("collect-without-permissions"),
-		KubernetesRestConfig:      restConfig,
-		Namespace:                 v.GetString("namespace"),
-		ProgressChan:              progressChan,
-		SinceTime:                 sinceTime,
-		OutputPath:                v.GetString("output"),
-		Redact:                    v.GetBool("redact"),
-		FromCLI:                   true,
-		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
+		CollectorProgressCallback:       collectorCB,
+		CollectWithoutPermissions:       v.GetBool("collect-without-permissions"),
+		RemoteHostCollectTimeoutSeconds: v.GetInt("remote-host-collect-timeout"),
+		KubernetesRestConfig:            restConfig,
+		Namespace:                       v.GetString("namespace"),
+		ProgressChan:                    progressChan,
+		SinceTime:                       sinceTime,
+		OutputPath:                      v.GetString("output"),
+		Redact:                          v.GetBool("redact"),
+		FromCLI:                         true,
+		RunHostCollectorsInPod:          mainBundle.Spec.RunHostCollectorsInPod,
 
 		// Phase 4: Tokenization options
 		Tokenize:            v.GetBool("tokenize"),

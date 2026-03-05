@@ -132,6 +132,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. Do not load by default unless no specs are provided in the cli args")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
+	cmd.Flags().Int("remote-host-collect-timeout", 30, "timeout in seconds for remote host collect operations (e.g. waiting for pods/daemonsets)")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
