@@ -30,17 +30,18 @@ import (
 )
 
 type SupportBundleCreateOpts struct {
-	CollectorProgressCallback func(chan interface{}, string)
-	CollectWithoutPermissions bool
-	HttpClient                *http.Client
-	KubernetesRestConfig      *rest.Config
-	Namespace                 string
-	ProgressChan              chan interface{}
-	SinceTime                 *time.Time
-	OutputPath                string
-	Redact                    bool
-	FromCLI                   bool
-	RunHostCollectorsInPod    bool
+	CollectorProgressCallback       func(chan interface{}, string)
+	CollectWithoutPermissions       bool
+	RemoteHostCollectTimeoutSeconds int
+	HttpClient                      *http.Client
+	KubernetesRestConfig            *rest.Config
+	Namespace                       string
+	ProgressChan                    chan interface{}
+	SinceTime                       *time.Time
+	OutputPath                      string
+	Redact                          bool
+	FromCLI                         bool
+	RunHostCollectorsInPod          bool
 
 	// Phase 4: Tokenization options
 	Tokenize            bool   // Enable intelligent tokenization
