@@ -448,12 +448,12 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 					return err
 				}
 
-				stdout, _, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
+				stdout, stderr, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
 				if err != nil {
 					// span.SetStatus(codes.Error, err.Error())
 					msg := fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
 					opts.CollectorProgressCallback(opts.ProgressChan, msg)
-					return errors.Wrap(err, "failed to run remote host collector")
+					return errors.Wrapf(err, "failed to run remote host collector: %s", string(stderr))
 				}
 
 				result := map[string]string{}
