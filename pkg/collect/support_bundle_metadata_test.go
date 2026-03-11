@@ -33,8 +33,8 @@ func TestCollectSupportBundleMetadata(t *testing.T) {
 						Namespace: "test-ns",
 					},
 					Data: map[string][]byte{
-						"mykey":     []byte("myvalue"),
-						"myversion": []byte("1.0.0-example"),
+						"mykey":      []byte("myvalue"),
+						"myversion":  []byte("1.0.0-example"),
 						"numCrashes": []byte("57"),
 					},
 				},
