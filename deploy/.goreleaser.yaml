@@ -135,7 +135,6 @@ dockers:
     ids:
       - support-bundle
       - preflight
-    skip_push: true
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:latest"
@@ -145,7 +144,6 @@ dockers:
     ids:
       - support-bundle
       - preflight
-    skip_push: true
 
 universal_binaries:
   - id: preflight-universal
