@@ -318,6 +318,12 @@ type Etcd struct {
 	Image         string `json:"image" yaml:"image"`
 }
 
+type SupportBundleMetadata struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	SecretName    string `json:"secretName" yaml:"secretName"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -348,7 +354,8 @@ type Collect struct {
 	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
 	NodeMetrics      *NodeMetrics      `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 	DNS              *DNS              `json:"dns,omitempty" yaml:"dns,omitempty"`
-	Etcd             *Etcd             `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	Etcd                  *Etcd                  `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	SupportBundleMetadata *SupportBundleMetadata `json:"supportBundleMetadata,omitempty" yaml:"supportBundleMetadata,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -568,6 +575,19 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 		})
 	} else if c.Sysctl != nil {
 		// TODO
+	} else if c.SupportBundleMetadata != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.SupportBundleMetadata.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "secrets",
+				Subresource: "",
+				Name:        c.SupportBundleMetadata.SecretName,
+			},
+			NonResourceAttributes: nil,
+		})
 	}
 
 	return result
@@ -670,6 +690,10 @@ func (c *Collect) GetName() string {
 	if c.Certificates != nil {
 		collector = "certificates"
 		name = c.Certificates.CollectorName
+	}
+	if c.SupportBundleMetadata != nil {
+		collector = "support-bundle-metadata"
+		name = c.SupportBundleMetadata.CollectorName
 	}
 
 	if collector == "" {
