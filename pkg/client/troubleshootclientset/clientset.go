@@ -23,6 +23,7 @@ import (
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
+	troubleshootv1beta3 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta3"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -32,6 +33,7 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta1Interface
 	TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface
+	TroubleshootV1beta3() troubleshootv1beta3.TroubleshootV1beta3Interface
 }
 
 // Clientset contains the clients for groups.
@@ -39,6 +41,7 @@ type Clientset struct {
 	*discovery.DiscoveryClient
 	troubleshootV1beta1 *troubleshootv1beta1.TroubleshootV1beta1Client
 	troubleshootV1beta2 *troubleshootv1beta2.TroubleshootV1beta2Client
+	troubleshootV1beta3 *troubleshootv1beta3.TroubleshootV1beta3Client
 }
 
 // TroubleshootV1beta1 retrieves the TroubleshootV1beta1Client
@@ -49,6 +52,11 @@ func (c *Clientset) TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta
 // TroubleshootV1beta2 retrieves the TroubleshootV1beta2Client
 func (c *Clientset) TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface {
 	return c.troubleshootV1beta2
+}
+
+// TroubleshootV1beta3 retrieves the TroubleshootV1beta3Client
+func (c *Clientset) TroubleshootV1beta3() troubleshootv1beta3.TroubleshootV1beta3Interface {
+	return c.troubleshootV1beta3
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -103,6 +111,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
+	cs.troubleshootV1beta3, err = troubleshootv1beta3.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
@@ -126,6 +138,7 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.troubleshootV1beta1 = troubleshootv1beta1.New(c)
 	cs.troubleshootV1beta2 = troubleshootv1beta2.New(c)
+	cs.troubleshootV1beta3 = troubleshootv1beta3.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
