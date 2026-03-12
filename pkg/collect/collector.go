@@ -128,6 +128,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectDNS{collector.DNS, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Etcd != nil:
 		return &CollectEtcd{collector.Etcd, bundlePath, clientConfig, client, ctx, RBACErrors}, true
+	case collector.SupportBundleMetadata != nil:
+		return &CollectSupportBundleMetadata{collector.SupportBundleMetadata, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -223,6 +225,9 @@ func getCollectorName(c interface{}) string {
 		collector = "dns"
 	case *CollectEtcd:
 		collector = "etcd"
+	case *CollectSupportBundleMetadata:
+		collector = "support-bundle-metadata"
+		name = v.Collector.CollectorName
 	default:
 		collector = "<none>"
 	}

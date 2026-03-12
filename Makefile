@@ -158,6 +158,7 @@ generate: controller-gen client-gen
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
 		--input troubleshoot/v1beta2 \
+		--input troubleshoot/v1beta3 \
 		--go-header-file ./hack/boilerplate.go.txt
 	cp -r troubleshootclientset pkg/client
 	rm -rf troubleshootclientset
