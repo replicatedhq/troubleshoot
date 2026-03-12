@@ -137,6 +137,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
+	cmd.Flags().StringSlice("metadata", []string{}, "user-provided metadata key=value pairs to include in the bundle (can be specified multiple times)")
 
 	// Upload flags
 	cmd.Flags().Bool("auto-upload", false, "automatically upload resulting bundle to replicated.app")

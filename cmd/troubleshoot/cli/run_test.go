@@ -464,3 +464,54 @@ func TestCollectTimeoutFlag(t *testing.T) {
 		assert.Equal(t, 90, actualTimeout, "remote-host-collect-timeout should be 90 when --remote-host-collect-timeout=90 is passed")
 	})
 }
+
+func TestParseMetadataFlag(t *testing.T) {
+	tests := []struct {
+		name    string
+		values  []string
+		want    map[string]string
+		wantErr bool
+	}{
+		{
+			name:   "nil input",
+			values: nil,
+			want:   nil,
+		},
+		{
+			name:   "empty input",
+			values: []string{},
+			want:   nil,
+		},
+		{
+			name:   "single pair",
+			values: []string{"env=staging"},
+			want:   map[string]string{"env": "staging"},
+		},
+		{
+			name:   "multiple pairs",
+			values: []string{"env=staging", "version=1.2.3"},
+			want:   map[string]string{"env": "staging", "version": "1.2.3"},
+		},
+		{
+			name:   "value contains equals",
+			values: []string{"config=key=value"},
+			want:   map[string]string{"config": "key=value"},
+		},
+		{
+			name:    "missing equals",
+			values:  []string{"noequals"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMetadataFlag(tt.values)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
