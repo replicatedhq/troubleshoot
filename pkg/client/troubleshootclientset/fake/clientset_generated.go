@@ -23,6 +23,8 @@ import (
 	faketroubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1/fake"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
 	faketroubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/fake"
+	troubleshootv1beta3 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta3"
+	faketroubleshootv1beta3 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta3/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -97,4 +99,9 @@ func (c *Clientset) TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta
 // TroubleshootV1beta2 retrieves the TroubleshootV1beta2Client
 func (c *Clientset) TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface {
 	return &faketroubleshootv1beta2.FakeTroubleshootV1beta2{Fake: &c.Fake}
+}
+
+// TroubleshootV1beta3 retrieves the TroubleshootV1beta3Client
+func (c *Clientset) TroubleshootV1beta3() troubleshootv1beta3.TroubleshootV1beta3Interface {
+	return &faketroubleshootv1beta3.FakeTroubleshootV1beta3{Fake: &c.Fake}
 }
