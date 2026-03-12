@@ -28,7 +28,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           version: "v2.12.3"
           args: release --clean --config deploy/.goreleaser.yaml
