@@ -31,12 +31,11 @@ spec:
     - clusterInfo:
         exclude: true
     - supportBundleMetadata:
-        secretName: e2e-metadata-secret
         namespace: $NAMESPACE
 `
 
 func TestSupportBundleMetadata(t *testing.T) {
-	secretName := "e2e-metadata-secret"
+	secretName := "replicated-support-metadata"
 	expectedData := map[string]string{
 		"appVersion":  "1.2.3",
 		"environment": "staging",

@@ -320,7 +320,6 @@ type Etcd struct {
 
 type SupportBundleMetadata struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	SecretName    string `json:"secretName" yaml:"secretName"`
 	Namespace     string `json:"namespace" yaml:"namespace"`
 }
 
@@ -584,7 +583,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 				Version:     "",
 				Resource:    "secrets",
 				Subresource: "",
-				Name:        c.SupportBundleMetadata.SecretName,
+				Name:        "replicated-support-metadata",
 			},
 			NonResourceAttributes: nil,
 		})

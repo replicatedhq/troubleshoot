@@ -23,13 +23,12 @@ func TestCollectSupportBundleMetadata(t *testing.T) {
 		{
 			name: "reads all data fields from secret",
 			collector: &troubleshootv1beta2.SupportBundleMetadata{
-				SecretName: "my-metadata",
-				Namespace:  "test-ns",
+				Namespace: "test-ns",
 			},
 			mockSecrets: []corev1.Secret{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-metadata",
+						Name:      "replicated-support-metadata",
 						Namespace: "test-ns",
 					},
 					Data: map[string][]byte{
@@ -50,13 +49,12 @@ func TestCollectSupportBundleMetadata(t *testing.T) {
 		{
 			name: "empty data map",
 			collector: &troubleshootv1beta2.SupportBundleMetadata{
-				SecretName: "empty-secret",
-				Namespace:  "test-ns",
+				Namespace: "test-ns",
 			},
 			mockSecrets: []corev1.Secret{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "empty-secret",
+						Name:      "replicated-support-metadata",
 						Namespace: "test-ns",
 					},
 					Data: map[string][]byte{},
@@ -69,8 +67,7 @@ func TestCollectSupportBundleMetadata(t *testing.T) {
 		{
 			name: "secret not found returns error",
 			collector: &troubleshootv1beta2.SupportBundleMetadata{
-				SecretName: "missing-secret",
-				Namespace:  "test-ns",
+				Namespace: "test-ns",
 			},
 			mockSecrets: []corev1.Secret{},
 			wantErr:     true,

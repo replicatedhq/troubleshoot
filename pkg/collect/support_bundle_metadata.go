@@ -33,9 +33,10 @@ func (c *CollectSupportBundleMetadata) IsExcluded() (bool, error) {
 func (c *CollectSupportBundleMetadata) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 
-	secret, err := c.Client.CoreV1().Secrets(c.Collector.Namespace).Get(c.Context, c.Collector.SecretName, metav1.GetOptions{})
+	const secretName = "replicated-support-metadata"
+	secret, err := c.Client.CoreV1().Secrets(c.Collector.Namespace).Get(c.Context, secretName, metav1.GetOptions{})
 	if err != nil {
-		return output, errors.Wrapf(err, "failed to get secret %s/%s", c.Collector.Namespace, c.Collector.SecretName)
+		return output, errors.Wrapf(err, "failed to get secret %s/%s", c.Collector.Namespace, secretName)
 	}
 
 	metadata := make(map[string]string)
