@@ -64,7 +64,7 @@ func TestSupportBundleMetadata(t *testing.T) {
 			}
 			return ctx
 		}).
-		Assess("check metadata/cluster.json contents", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("check metadata/cluster.json and metadata/user.json contents", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
 
 			namespace := c.Namespace()
@@ -75,8 +75,18 @@ func TestSupportBundleMetadata(t *testing.T) {
 			err := os.WriteFile(specPath, []byte(spec), 0644)
 			require.NoError(t, err)
 
+			expectedUserMetadata := map[string]string{
+				"contactEmail": "support@example.com",
+				"ticketID":     "ISSUE-42",
+			}
+
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
-			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), specPath,
+				"--interactive=false",
+				fmt.Sprintf("-o=%s", supportBundleName),
+				"--metadata=contactEmail=support@example.com",
+				"--metadata=ticketID=ISSUE-42",
+			)
 			cmd.Stdout = &out
 			err = cmd.Run()
 			if err != nil {
@@ -90,14 +100,25 @@ func TestSupportBundleMetadata(t *testing.T) {
 				}
 			}()
 
-			metadataJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/metadata/cluster.json", supportBundleName))
+			// Validate metadata/cluster.json from the secret
+			clusterJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/metadata/cluster.json", supportBundleName))
 			require.NoError(t, err)
 
-			var result map[string]string
-			err = json.Unmarshal(metadataJSON, &result)
+			var clusterResult map[string]string
+			err = json.Unmarshal(clusterJSON, &clusterResult)
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedData, result)
+			assert.Equal(t, expectedData, clusterResult)
+
+			// Validate metadata/user.json from the --metadata flag
+			userJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/metadata/user.json", supportBundleName))
+			require.NoError(t, err)
+
+			var userResult map[string]string
+			err = json.Unmarshal(userJSON, &userResult)
+			require.NoError(t, err)
+
+			assert.Equal(t, expectedUserMetadata, userResult)
 
 			return ctx
 		}).Feature()
