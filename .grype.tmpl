@@ -1,0 +1,4 @@
+NAME	INSTALLED	FIXED-IN	TYPE	VULNERABILITY	SEVERITY	EPSS	RISK	PATH
+{{- range .Matches}}
+{{.Artifact.Name}}	{{.Artifact.Version}}	{{join .Vulnerability.Fix.Versions ","}}	{{.Artifact.Type}}	{{.Vulnerability.ID}}	{{.Vulnerability.Severity}}	{{.Vulnerability.EPSS}}	{{.Vulnerability.Risk}}	{{range .Artifact.Locations}}{{.AccessPath}}{{end}}
+{{- end}}

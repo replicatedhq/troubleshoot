@@ -267,7 +267,7 @@ get-grype:
 scan: get-govulncheck get-grype
 	govulncheck ./...
 	grype db update
-	grype dir:. --only-fixed --fail-on high
+	grype dir:. --only-fixed --fail-on high -o template -t .grype.tmpl
 
 .PHONY: watch
 watch: npm-install
