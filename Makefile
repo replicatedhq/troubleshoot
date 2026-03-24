@@ -255,23 +255,17 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 		sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
 	cosign public-key --key cosign.key --outfile sbom/assets/key.pub
 
-.PHONY: govulncheck
-govulncheck:
+.PHONY: get-govulncheck
+get-govulncheck:
 	@command -v govulncheck >/dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
 
-.PHONY: grype
-grype:
+.PHONY: get-grype
+get-grype:
 	@command -v grype >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b $(GOPATH)/bin
 
 .PHONY: scan
-scan: scan-govulncheck scan-grype
-
-.PHONY: scan-govulncheck
-scan-govulncheck: govulncheck
+scan: get-govulncheck get-grype
 	govulncheck ./...
-
-.PHONY: scan-grype
-scan-grype: grype
 	grype db update
 	grype dir:. --only-fixed --fail-on high
 
