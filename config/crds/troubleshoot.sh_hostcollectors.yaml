@@ -43,7 +43,16 @@ spec:
                 items:
                   properties:
                     blockDevices:
+                      description: BlockDevicesAnalyze evaluates host-collected block
+                        device listings (lsblk-based).
                       properties:
+                        additionalDeviceTypes:
+                          description: |-
+                            AdditionalDeviceTypes are extra lsblk TYPE values (e.g. loop, lvm) that may count toward outcomes,
+                            in addition to whole disks and (when IncludeUnmountedPartitions is set) partitions.
+                          items:
+                            type: string
+                          type: array
                         annotations:
                           additionalProperties:
                             type: string
