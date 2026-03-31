@@ -448,6 +448,11 @@ func (in *AnalyzerStatus) DeepCopy() *AnalyzerStatus {
 func (in *BlockDevicesAnalyze) DeepCopyInto(out *BlockDevicesAnalyze) {
 	*out = *in
 	in.AnalyzeMeta.DeepCopyInto(&out.AnalyzeMeta)
+	if in.AdditionalDeviceTypes != nil {
+		in, out := &in.AdditionalDeviceTypes, &out.AdditionalDeviceTypes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Outcomes != nil {
 		in, out := &in.Outcomes, &out.Outcomes
 		*out = make([]*Outcome, len(*in))

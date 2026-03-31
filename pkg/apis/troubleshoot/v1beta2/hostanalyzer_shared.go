@@ -60,12 +60,16 @@ type TimeAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+// BlockDevicesAnalyze evaluates host-collected block device listings (lsblk-based).
 type BlockDevicesAnalyze struct {
 	AnalyzeMeta                `json:",inline" yaml:",inline"`
-	CollectorName              string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	MinimumAcceptableSize      uint64     `json:"minimumAcceptableSize" yaml:"minimumAcceptableSize"`
-	IncludeUnmountedPartitions bool       `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
-	Outcomes                   []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName              string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	MinimumAcceptableSize      uint64 `json:"minimumAcceptableSize" yaml:"minimumAcceptableSize"`
+	IncludeUnmountedPartitions bool   `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
+	// AdditionalDeviceTypes are extra lsblk TYPE values (e.g. loop, lvm) that may count toward outcomes,
+	// in addition to whole disks and (when IncludeUnmountedPartitions is set) partitions.
+	AdditionalDeviceTypes []string   `json:"additionalDeviceTypes,omitempty" yaml:"additionalDeviceTypes,omitempty"`
+	Outcomes              []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type SystemPackagesAnalyze struct {
