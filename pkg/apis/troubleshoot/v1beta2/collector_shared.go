@@ -323,6 +323,17 @@ type SupportBundleMetadata struct {
 	Namespace     string `json:"namespace" yaml:"namespace"`
 }
 
+type S3Status struct {
+	CollectorMeta  `json:",inline" yaml:",inline"`
+	BucketName     string `json:"bucketName" yaml:"bucketName"`
+	Region         string `json:"region,omitempty" yaml:"region,omitempty"`
+	Endpoint       string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	AccessKeyID    string `json:"accessKeyID,omitempty" yaml:"accessKeyID,omitempty"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" yaml:"secretAccessKey,omitempty"`
+	UsePathStyle   bool   `json:"usePathStyle,omitempty" yaml:"usePathStyle,omitempty"`
+	Insecure       bool   `json:"insecure,omitempty" yaml:"insecure,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo           *ClusterInfo           `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources      *ClusterResources      `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -355,6 +366,7 @@ type Collect struct {
 	DNS                   *DNS                   `json:"dns,omitempty" yaml:"dns,omitempty"`
 	Etcd                  *Etcd                  `json:"etcd,omitempty" yaml:"etcd,omitempty"`
 	SupportBundleMetadata *SupportBundleMetadata `json:"supportBundleMetadata,omitempty" yaml:"supportBundleMetadata,omitempty"`
+	S3Status              *S3Status              `json:"s3Status,omitempty" yaml:"s3Status,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -587,6 +599,8 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.S3Status != nil {
+		// NOOP
 	}
 
 	return result
@@ -693,6 +707,10 @@ func (c *Collect) GetName() string {
 	if c.SupportBundleMetadata != nil {
 		collector = "support-bundle-metadata"
 		name = c.SupportBundleMetadata.CollectorName
+	}
+	if c.S3Status != nil {
+		collector = "s3Status"
+		name = c.S3Status.CollectorName
 	}
 
 	if collector == "" {

@@ -130,6 +130,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectEtcd{collector.Etcd, bundlePath, clientConfig, client, ctx, RBACErrors}, true
 	case collector.SupportBundleMetadata != nil:
 		return &CollectSupportBundleMetadata{collector.SupportBundleMetadata, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.S3Status != nil:
+		return &CollectS3Status{collector.S3Status, bundlePath, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -227,6 +229,9 @@ func getCollectorName(c interface{}) string {
 		collector = "etcd"
 	case *CollectSupportBundleMetadata:
 		collector = "support-bundle-metadata"
+		name = v.Collector.CollectorName
+	case *CollectS3Status:
+		collector = "s3Status"
 		name = v.Collector.CollectorName
 	default:
 		collector = "<none>"
