@@ -12,13 +12,13 @@ import (
 
 func TestAnalyzeS3Status(t *testing.T) {
 	tests := []struct {
-		name         string
-		analyzer     *troubleshootv1beta2.DatabaseAnalyze
-		collected    *collect.DatabaseConnection
-		wantPass     bool
-		wantFail     bool
-		wantWarn     bool
-		wantMessage  string
+		name        string
+		analyzer    *troubleshootv1beta2.DatabaseAnalyze
+		collected   *collect.DatabaseConnection
+		wantPass    bool
+		wantFail    bool
+		wantWarn    bool
+		wantMessage string
 	}{
 		{
 			name: "connected, pass",
