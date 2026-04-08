@@ -7,19 +7,19 @@ import (
 	"fmt"
 	"time"
 
+	"crypto/tls"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"net/http"
-	"crypto/tls"
 )
 
 type S3StatusResult struct {
-	BucketName string `json:"bucketName"`
-	Endpoint   string `json:"endpoint,omitempty"`
-	Region     string `json:"region,omitempty"`
+	BucketName  string `json:"bucketName"`
+	Endpoint    string `json:"endpoint,omitempty"`
+	Region      string `json:"region,omitempty"`
 	IsConnected bool   `json:"isConnected"`
 	Error       string `json:"error,omitempty"`
 }

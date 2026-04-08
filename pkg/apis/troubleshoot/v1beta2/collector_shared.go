@@ -324,14 +324,14 @@ type SupportBundleMetadata struct {
 }
 
 type S3Status struct {
-	CollectorMeta  `json:",inline" yaml:",inline"`
-	BucketName     string `json:"bucketName" yaml:"bucketName"`
-	Region         string `json:"region,omitempty" yaml:"region,omitempty"`
-	Endpoint       string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
-	AccessKeyID    string `json:"accessKeyID,omitempty" yaml:"accessKeyID,omitempty"`
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	BucketName      string `json:"bucketName" yaml:"bucketName"`
+	Region          string `json:"region,omitempty" yaml:"region,omitempty"`
+	Endpoint        string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	AccessKeyID     string `json:"accessKeyID,omitempty" yaml:"accessKeyID,omitempty"`
 	SecretAccessKey string `json:"secretAccessKey,omitempty" yaml:"secretAccessKey,omitempty"`
-	UsePathStyle   bool   `json:"usePathStyle,omitempty" yaml:"usePathStyle,omitempty"`
-	Insecure       bool   `json:"insecure,omitempty" yaml:"insecure,omitempty"`
+	UsePathStyle    bool   `json:"usePathStyle,omitempty" yaml:"usePathStyle,omitempty"`
+	Insecure        bool   `json:"insecure,omitempty" yaml:"insecure,omitempty"`
 }
 
 type Collect struct {

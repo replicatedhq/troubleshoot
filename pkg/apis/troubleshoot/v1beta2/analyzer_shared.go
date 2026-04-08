@@ -316,4 +316,5 @@ type Analyze struct {
 	Event                    *EventAnalyze             `json:"event,omitempty" yaml:"event,omitempty"`
 	NodeMetrics              *NodeMetricsAnalyze       `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 	HTTP                     *HTTPAnalyze              `json:"http,omitempty" yaml:"http,omitempty"`
+	S3Status                 *DatabaseAnalyze          `json:"s3Status,omitempty" yaml:"s3Status,omitempty"`
 }
