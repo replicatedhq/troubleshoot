@@ -262,6 +262,8 @@ func GetAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeNodeMetrics{analyzer: analyzer.NodeMetrics}
 	case analyzer.HTTP != nil:
 		return &AnalyzeHTTPAnalyze{analyzer: analyzer.HTTP}
+	case analyzer.S3Status != nil:
+		return &AnalyzeS3Status{analyzer: analyzer.S3Status}
 	default:
 		return nil
 	}
