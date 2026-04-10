@@ -34,6 +34,11 @@ func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 
 	tarReader := tar.NewReader(gzReader)
 
+	// Collect results from both sources in a single pass; license.json takes priority
+	// regardless of its position in the tar, since configmaps often appear earlier.
+	var licenseJSONID, licenseJSONSlug string
+	var configmapID, configmapSlug string
+
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -43,50 +48,47 @@ func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 			return "", "", errors.Wrap(err, "failed to read tar header")
 		}
 
-		// First priority: check for the new license.json file
-		if strings.Contains(header.Name, "cluster-resources/license.json") && header.Typeflag == tar.TypeReg {
+		if header.Typeflag != tar.TypeReg {
+			continue
+		}
+
+		// First priority: cluster-resources/license.json
+		if strings.Contains(header.Name, "cluster-resources/license.json") {
 			content := make([]byte, header.Size)
 			if _, err := io.ReadFull(tarReader, content); err != nil {
 				continue
 			}
-
-			// Parse the license.json file
 			var licenseData struct {
 				LicenseID string `json:"licenseID"`
 				AppSlug   string `json:"appSlug"`
 			}
 			if err := json.Unmarshal(content, &licenseData); err == nil {
 				if licenseData.LicenseID != "" && licenseData.AppSlug != "" {
-					return licenseData.LicenseID, licenseData.AppSlug, nil
+					licenseJSONID = licenseData.LicenseID
+					licenseJSONSlug = licenseData.AppSlug
 				}
 			}
 			continue
 		}
 
-		// Fallback: process files in cluster-resources/configmaps/
+		// Fallback: cluster-resources/configmaps/
+		if configmapID != "" {
+			continue // already have a configmap result
+		}
 		if !strings.Contains(header.Name, "cluster-resources/configmaps/") {
 			continue
 		}
-
-		// Skip directories
-		if header.Typeflag != tar.TypeReg {
-			continue
-		}
-
-		// Process .yaml, .yml, and .json files
 		if !strings.HasSuffix(header.Name, ".yaml") &&
 			!strings.HasSuffix(header.Name, ".yml") &&
 			!strings.HasSuffix(header.Name, ".json") {
 			continue
 		}
 
-		// Read the file content
 		content := make([]byte, header.Size)
 		if _, err := io.ReadFull(tarReader, content); err != nil {
-			continue // Skip files we can't read
+			continue
 		}
 
-		// Try to extract license from this configmap
 		var license string
 		if strings.HasSuffix(header.Name, ".json") {
 			license = extractLicenseFromJSON(content)
@@ -95,15 +97,21 @@ func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 		}
 
 		if license != "" {
-			// Extract app slug from filename
 			filename := filepath.Base(header.Name)
-			appSlug := strings.TrimSuffix(filename, ".json")
-			appSlug = strings.TrimSuffix(appSlug, ".yaml")
-			appSlug = strings.TrimSuffix(appSlug, ".yml")
-			return license, appSlug, nil
+			slug := strings.TrimSuffix(filename, ".json")
+			slug = strings.TrimSuffix(slug, ".yaml")
+			slug = strings.TrimSuffix(slug, ".yml")
+			configmapID = license
+			configmapSlug = slug
 		}
 	}
 
+	if licenseJSONID != "" {
+		return licenseJSONID, licenseJSONSlug, nil
+	}
+	if configmapID != "" {
+		return configmapID, configmapSlug, nil
+	}
 	return "", "", nil // No license found
 }
 
