@@ -9,10 +9,14 @@ builds:
     main: ./cmd/preflight/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
-    goarch: [amd64, arm, arm64]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
@@ -32,10 +36,14 @@ builds:
     main: ./cmd/troubleshoot/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
-    goarch: [amd64, arm, arm64]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
@@ -55,10 +63,14 @@ builds:
     main: ./cmd/collect/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
-    goarch: [amd64, arm, arm64]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
