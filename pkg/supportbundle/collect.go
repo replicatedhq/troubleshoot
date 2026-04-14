@@ -155,6 +155,14 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	// move Copy Collectors if any to the end of the execution list
 	allCollectors = collect.EnsureCopyLast(allCollectors)
 
+	type skippedCollector struct {
+		Collector string   `json:"collector"`
+		Reason    string   `json:"reason"`
+		Errors    []string `json:"errors"`
+		Timestamp string   `json:"timestamp"`
+	}
+	var skippedCollectors []skippedCollector
+
 	for _, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
@@ -165,6 +173,13 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
+
+			skippedCollectors = append(skippedCollectors, skippedCollector{
+				Collector: collector.Title(),
+				Reason:    "excluded",
+				Timestamp: time.Now().Format(time.RFC3339),
+			})
+
 			continue
 		}
 
@@ -175,6 +190,19 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
+
+				rbacErrors := collector.GetRBACErrors()
+				errorMessages := make([]string, 0, len(rbacErrors))
+				for _, e := range rbacErrors {
+					errorMessages = append(errorMessages, e.Error())
+				}
+				skippedCollectors = append(skippedCollectors, skippedCollector{
+					Collector: collector.Title(),
+					Reason:    "insufficient RBAC permissions",
+					Errors:    errorMessages,
+					Timestamp: time.Now().Format(time.RFC3339),
+				})
+
 				continue
 			}
 		}
@@ -205,6 +233,16 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			allCollectedData[k] = v
 		}
 		span.End()
+	}
+
+	// Write skipped collectors manifest to the bundle so users can see what was missed
+	if len(skippedCollectors) > 0 {
+		if skippedJSON, err := json.Marshal(skippedCollectors); err == nil {
+			allCollectedData["skipped-collectors.json"] = skippedJSON
+			if writeErr := os.MkdirAll(bundlePath, 0755); writeErr == nil {
+				_ = os.WriteFile(filepath.Join(bundlePath, "skipped-collectors.json"), skippedJSON, 0644)
+			}
+		}
 	}
 
 	collectResult := allCollectedData

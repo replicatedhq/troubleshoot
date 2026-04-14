@@ -245,6 +245,14 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	// move Copy Collectors if any to the end of the execution list
 	allCollectors = collect.EnsureCopyLast(allCollectors)
 
+	type skippedCollector struct {
+		Collector string   `json:"collector"`
+		Reason    string   `json:"reason"`
+		Errors    []string `json:"errors"`
+		Timestamp string   `json:"timestamp"`
+	}
+	var skippedCollectors []skippedCollector
+
 	for i, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
@@ -254,6 +262,13 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 			klog.V(1).Infof("excluding %q collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
+
+			skippedCollectors = append(skippedCollectors, skippedCollector{
+				Collector: collector.Title(),
+				Reason:    "excluded",
+				Timestamp: time.Now().Format(time.RFC3339),
+			})
+
 			continue
 		}
 
@@ -270,6 +285,19 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 				}
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
+
+				rbacErrors := collector.GetRBACErrors()
+				errorMessages := make([]string, 0, len(rbacErrors))
+				for _, e := range rbacErrors {
+					errorMessages = append(errorMessages, e.Error())
+				}
+				skippedCollectors = append(skippedCollectors, skippedCollector{
+					Collector: collector.Title(),
+					Reason:    "insufficient RBAC permissions",
+					Errors:    errorMessages,
+					Timestamp: time.Now().Format(time.RFC3339),
+				})
+
 				continue
 			}
 		}
@@ -318,6 +346,18 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 			allCollectedData[k] = v
 		}
 		span.End()
+	}
+
+	// Write skipped collectors manifest so users can see what was missed
+	if len(skippedCollectors) > 0 {
+		if skippedJSON, err := json.Marshal(skippedCollectors); err == nil {
+			allCollectedData["skipped-collectors.json"] = skippedJSON
+			if opts.BundlePath != "" {
+				if writeErr := os.MkdirAll(opts.BundlePath, 0755); writeErr == nil {
+					_ = os.WriteFile(filepath.Join(opts.BundlePath, "skipped-collectors.json"), skippedJSON, 0644)
+				}
+			}
+		}
 	}
 
 	// The values of map entries will contain the collected data in bytes if the data was not stored to disk

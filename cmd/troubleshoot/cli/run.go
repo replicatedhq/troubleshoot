@@ -166,6 +166,14 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		go func() {
 			defer wg.Done()
 			for msg := range progressChan {
+				switch msg := msg.(type) {
+				case error:
+					klog.Warningf("Collecting support bundle: %v", msg)
+				case string:
+					if strings.Contains(msg, "skipping collector") {
+						klog.Warningf("Collecting support bundle: %s", msg)
+					}
+				}
 				klog.Infof("Collecting support bundle: %v", msg)
 			}
 		}()
