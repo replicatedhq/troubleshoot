@@ -104,6 +104,134 @@ jobs:
           path: bin/
           retention-days: 1
 
+  # Minimal linux architecture smoke tests
+  linux-arch-smoke:
+    if: needs.changes.outputs.go-files == 'true'
+    needs: [changes, lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            docker_platform: linux/amd64
+            expected_machine: x86_64
+          - goarch: arm64
+            docker_platform: linux/arm64
+            expected_machine: aarch64
+          - goarch: arm
+            goarm: "7"
+            docker_platform: linux/arm/v7
+            expected_machine: armv7l
+          - goarch: riscv64
+            docker_platform: linux/riscv64
+            expected_machine: riscv64
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Setup K3s
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64,arm,riscv64
+
+      - name: Build linux/${{ matrix.goarch }} binaries
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          if [ -n "${GOARM}" ]; then
+            echo "Building for GOARCH=${GOARCH} GOARM=${GOARM}"
+          else
+            echo "Building for GOARCH=${GOARCH}"
+          fi
+          make build
+
+      - name: Collect a minimal support bundle on ${{ matrix.docker_platform }}
+        env:
+          PREFLIGHT_AUTO_UPDATE: "false"
+          TROUBLESHOOT_AUTO_UPDATE: "false"
+        run: |
+          set -euo pipefail
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+          kubeconfig_path="${KUBECONFIG:-$HOME/.kube/config}"
+
+          assert_tar_member() {
+            local pattern="$1"
+            local label="$2"
+            local member
+            member="$(grep -m1 "$pattern" "$tmpdir/archive-members.txt" || true)"
+            if [ -z "$member" ]; then
+              echo "Expected ${label} was not found in ${archive}"
+              exit 1
+            fi
+            echo "Found ${label}: ${member}"
+          }
+
+          echo "Using kubeconfig at ${kubeconfig_path}"
+          test -f "${kubeconfig_path}"
+          cp "${kubeconfig_path}" "$tmpdir/kubeconfig"
+
+          echo "Verifying K3s cluster is reachable on the host"
+          kubectl --kubeconfig "$tmpdir/kubeconfig" get nodes -o wide
+
+          docker run --rm \
+            --platform ${{ matrix.docker_platform }} \
+            --network host \
+            -v "$PWD:/src" \
+            -v "$tmpdir:/tmp/linux-arch-smoke" \
+            -w /src \
+            alpine:3.23 \
+            sh -ec '
+              export PREFLIGHT_AUTO_UPDATE=false
+              export TROUBLESHOOT_AUTO_UPDATE=false
+              /src/bin/support-bundle \
+                --kubeconfig /tmp/linux-arch-smoke/kubeconfig \
+                --interactive=false \
+                /src/test/e2e/support-bundle/spec/linuxArchSmokeLocalHostCollectors.yaml \
+                --output /tmp/linux-arch-smoke/linux-arch-support-bundle.tar.gz
+            '
+
+          archive="$tmpdir/linux-arch-support-bundle.tar.gz"
+          test -f "$archive"
+          echo "Generated support bundle archive: $archive"
+          tar -tf "$archive" > "$tmpdir/archive-members.txt"
+
+          assert_tar_member '/host-collectors/system/cpu.json$' 'cpu.json'
+          assert_tar_member '/host-collectors/system/memory.json$' 'memory.json'
+          assert_tar_member '/host-collectors/run-host/uname.txt$' 'uname.txt'
+          assert_tar_member '/cluster-resources/nodes.json$' 'cluster-resources nodes.json'
+          assert_tar_member '/cluster-resources/resources.json$' 'cluster-resources resources.json'
+          assert_tar_member '/analysis.json$' 'analysis.json'
+
+          echo "Checking uname -m output"
+          uname_path="$(grep -m1 '/host-collectors/run-host/uname.txt$' "$tmpdir/archive-members.txt")"
+          uname_machine="$(tar -xOf "$archive" "$uname_path" | tr -d '\r\n')"
+          if [ "$uname_machine" != '${{ matrix.expected_machine }}' ]; then
+            echo "Unexpected uname -m output: ${uname_machine}"
+            exit 1
+          fi
+          echo "Analyzer input check passed: uname -m reported ${uname_machine}"
+
+          echo "Checking analysis.json"
+          analysis_path="$(grep -m1 '/analysis.json$' "$tmpdir/archive-members.txt")"
+          tar -xOf "$archive" "$analysis_path" > "$tmpdir/analysis.json"
+          jq -e '
+            .[]
+            | select(.insight.primary == "Linux arch smoke node count")
+            | select(.insight.detail == "This cluster has exactly 1 node")
+            | select(.severity == "debug")
+          ' "$tmpdir/analysis.json" >/dev/null
+          echo "Found expected analyzer result: Linux arch smoke node count -> This cluster has exactly 1 node"
+
   # E2E tests
   e2e:
     if: needs.changes.outputs.go-files == 'true' || github.event_name == 'push'
@@ -143,7 +271,7 @@ jobs:
   # Success summary
   success:
     if: always()
-    needs: [lint, test, build, e2e]
+    needs: [lint, test, build, linux-arch-smoke, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -152,6 +280,7 @@ jobs:
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
              [[ "${{ needs.test.result }}" == "failure" ]] || \
              [[ "${{ needs.build.result }}" == "failure" ]] || \
+             [[ "${{ needs.linux-arch-smoke.result }}" == "failure" ]] || \
              [[ "${{ needs.e2e.result }}" == "failure" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
@@ -161,6 +290,7 @@ jobs:
           if [[ "${{ needs.lint.result }}" == "cancelled" ]] || \
              [[ "${{ needs.test.result }}" == "cancelled" ]] || \
              [[ "${{ needs.build.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.linux-arch-smoke.result }}" == "cancelled" ]] || \
              [[ "${{ needs.e2e.result }}" == "cancelled" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
