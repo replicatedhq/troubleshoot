@@ -87,16 +87,21 @@ func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollec
 		pod := pods[0]
 		stdout, stderr, execErrors := getExecOutputs(ctx, clientConfig, client, pod, execCollector)
 
+		filePrefix := execCollector.CollectorName
+		if filePrefix == "" {
+			filePrefix = execCollector.ContainerName
+		}
+
 		path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
 		if len(stdout) > 0 {
-			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
+			output.SaveResult(bundlePath, filepath.Join(path, filePrefix+"-stdout.txt"), bytes.NewBuffer(stdout))
 		}
 		if len(stderr) > 0 {
-			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
+			output.SaveResult(bundlePath, filepath.Join(path, filePrefix+"-stderr.txt"), bytes.NewBuffer(stderr))
 		}
 
 		if len(execErrors) > 0 {
-			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
+			output.SaveResult(bundlePath, filepath.Join(path, filePrefix+"-errors.json"), marshalErrors(execErrors))
 		}
 	}
 
