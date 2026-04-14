@@ -189,7 +189,7 @@ jobs:
             -v "$PWD:/src" \
             -v "$tmpdir:/tmp/linux-arch-smoke" \
             -w /src \
-            alpine:3.21 \
+            alpine:3.23 \
             sh -ec '
               export PREFLIGHT_AUTO_UPDATE=false
               export TROUBLESHOOT_AUTO_UPDATE=false
