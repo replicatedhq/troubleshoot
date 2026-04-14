@@ -880,6 +880,55 @@ spec:
                       - namespace
                       - outcomes
                       type: object
+                    ingressClass:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        ingressClassName:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     jobStatus:
                       properties:
                         annotations:
@@ -1922,7 +1971,16 @@ spec:
                 items:
                   properties:
                     blockDevices:
+                      description: BlockDevicesAnalyze evaluates host-collected block
+                        device listings (lsblk-based).
                       properties:
+                        additionalDeviceTypes:
+                          description: |-
+                            AdditionalDeviceTypes are extra lsblk TYPE values (e.g. loop, lvm) that may count toward outcomes,
+                            in addition to whole disks and (when IncludeUnmountedPartitions is set) partitions.
+                          items:
+                            type: string
+                          type: array
                         annotations:
                           additionalProperties:
                             type: string

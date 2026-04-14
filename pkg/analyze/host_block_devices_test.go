@@ -256,23 +256,22 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
-			b, err := json.Marshal(test.devices)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			getCollectedFileContents := func(filename string) ([]byte, error) {
-				return b, nil
-			}
-
-			result, err := (&AnalyzeHostBlockDevices{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
+			result, err := analyzeHostBlockDevicesOutput(t, test.devices, test.hostAnalyzer)
 			if test.expectErr {
 				req.Error(err)
 			} else {
 				req.NoError(err)
 			}
-
 			assert.Equal(t, test.result, result)
 		})
 	}
+}
+
+// analyzeHostBlockDevicesOutput runs the host block device analyzer on marshaled fixture data (shared by match tests).
+func analyzeHostBlockDevicesOutput(t *testing.T, devices []collect.BlockDeviceInfo, hostAnalyzer *troubleshootv1beta2.BlockDevicesAnalyze) ([]*AnalyzeResult, error) {
+	t.Helper()
+	b, err := json.Marshal(devices)
+	require.NoError(t, err)
+	getCollectedFileContents := func(string) ([]byte, error) { return b, nil }
+	return (&AnalyzeHostBlockDevices{hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 }

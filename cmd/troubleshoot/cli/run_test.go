@@ -13,6 +13,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	testclient "k8s.io/client-go/kubernetes/fake"
@@ -435,4 +436,82 @@ func Test_loadInvalidURISpec(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, sb.Spec.Collectors, 3)              // default + clusterInfo + clusterResources
 	assert.NotNil(t, sb.Spec.Collectors[0].ConfigMap) // come from the original spec
+}
+
+func TestCollectTimeoutFlag(t *testing.T) {
+	const defaultCollectTimeout = 30
+
+	// Parse flags and bind to viper without running the full command (avoids k8s connection).
+	// This verifies the flag is defined and viper receives the correct value.
+	bindFlagsFromArgs := func(t *testing.T, args []string) {
+		t.Helper()
+		cmd := RootCmd()
+		require.NoError(t, cmd.Flags().Parse(args))
+		if cmd.PersistentPreRun != nil {
+			cmd.PersistentPreRun(cmd, nil)
+		}
+	}
+
+	t.Run("default value when flag not set", func(t *testing.T) {
+		bindFlagsFromArgs(t, []string{})
+		actualTimeout := viper.GetInt("remote-host-collect-timeout")
+		assert.Equal(t, defaultCollectTimeout, actualTimeout, "remote-host-collect-timeout should default to 30 seconds")
+	})
+
+	t.Run("custom value when flag set", func(t *testing.T) {
+		bindFlagsFromArgs(t, []string{"--remote-host-collect-timeout=90"})
+		actualTimeout := viper.GetInt("remote-host-collect-timeout")
+		assert.Equal(t, 90, actualTimeout, "remote-host-collect-timeout should be 90 when --remote-host-collect-timeout=90 is passed")
+	})
+}
+
+func TestParseMetadataFlag(t *testing.T) {
+	tests := []struct {
+		name    string
+		values  []string
+		want    map[string]string
+		wantErr bool
+	}{
+		{
+			name:   "nil input",
+			values: nil,
+			want:   nil,
+		},
+		{
+			name:   "empty input",
+			values: []string{},
+			want:   nil,
+		},
+		{
+			name:   "single pair",
+			values: []string{"env=staging"},
+			want:   map[string]string{"env": "staging"},
+		},
+		{
+			name:   "multiple pairs",
+			values: []string{"env=staging", "version=1.2.3"},
+			want:   map[string]string{"env": "staging", "version": "1.2.3"},
+		},
+		{
+			name:   "value contains equals",
+			values: []string{"config=key=value"},
+			want:   map[string]string{"config": "key=value"},
+		},
+		{
+			name:    "missing equals",
+			values:  []string{"noequals"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMetadataFlag(tt.values)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
 }

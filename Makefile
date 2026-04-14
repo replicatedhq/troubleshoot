@@ -158,6 +158,7 @@ generate: controller-gen client-gen
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
 		--input troubleshoot/v1beta2 \
+		--input troubleshoot/v1beta3 \
 		--go-header-file ./hack/boilerplate.go.txt
 	cp -r troubleshootclientset pkg/client
 	rm -rf troubleshootclientset
@@ -254,14 +255,19 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 		sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
 	cosign public-key --key cosign.key --outfile sbom/assets/key.pub
 
+.PHONY: get-govulncheck
+get-govulncheck:
+	@command -v govulncheck >/dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
+
+.PHONY: get-grype
+get-grype:
+	@command -v grype >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b $(GOPATH)/bin
+
 .PHONY: scan
-scan:
-	trivy fs \
-		--scanners vuln \
-		--exit-code=1 \
-		--severity="HIGH,CRITICAL" \
-		--ignore-unfixed \
-		./
+scan: get-govulncheck get-grype
+	govulncheck ./...
+	grype db update
+	grype dir:. --only-fixed --fail-on high -o template -t .grype.tmpl
 
 .PHONY: watch
 watch: npm-install

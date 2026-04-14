@@ -3,6 +3,7 @@ package supportbundle
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,17 +31,18 @@ import (
 )
 
 type SupportBundleCreateOpts struct {
-	CollectorProgressCallback func(chan interface{}, string)
-	CollectWithoutPermissions bool
-	HttpClient                *http.Client
-	KubernetesRestConfig      *rest.Config
-	Namespace                 string
-	ProgressChan              chan interface{}
-	SinceTime                 *time.Time
-	OutputPath                string
-	Redact                    bool
-	FromCLI                   bool
-	RunHostCollectorsInPod    bool
+	CollectorProgressCallback       func(chan interface{}, string)
+	CollectWithoutPermissions       bool
+	RemoteHostCollectTimeoutSeconds int
+	HttpClient                      *http.Client
+	KubernetesRestConfig            *rest.Config
+	Namespace                       string
+	ProgressChan                    chan interface{}
+	SinceTime                       *time.Time
+	OutputPath                      string
+	Redact                          bool
+	FromCLI                         bool
+	RunHostCollectorsInPod          bool
 
 	// Phase 4: Tokenization options
 	Tokenize            bool   // Enable intelligent tokenization
@@ -50,6 +52,8 @@ type SupportBundleCreateOpts struct {
 	VerifyTokenization  bool   // Validation mode only
 	BundleID            string // Custom bundle identifier
 	TokenizationStats   bool   // Include detailed tokenization statistics
+
+	UserMetadata map[string]string // User-provided key=value metadata pairs
 }
 
 type SupportBundleResponse struct {
@@ -179,6 +183,17 @@ func CollectSupportBundleFromSpec(
 	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
+	}
+
+	if len(opts.UserMetadata) > 0 {
+		metadataJSON, err := json.MarshalIndent(opts.UserMetadata, "", "  ")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal user metadata")
+		}
+		err = result.SaveResult(bundlePath, "metadata/user.json", bytes.NewBuffer(metadataJSON))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to write user metadata")
+		}
 	}
 
 	// Run Analyzers

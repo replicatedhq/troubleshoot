@@ -200,17 +200,23 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		}()
 	}
 
+	userMetadata, err := parseMetadataFlag(v.GetStringSlice("metadata"))
+	if err != nil {
+		return errors.Wrap(err, "invalid metadata flag")
+	}
+
 	createOpts := supportbundle.SupportBundleCreateOpts{
-		CollectorProgressCallback: collectorCB,
-		CollectWithoutPermissions: v.GetBool("collect-without-permissions"),
-		KubernetesRestConfig:      restConfig,
-		Namespace:                 v.GetString("namespace"),
-		ProgressChan:              progressChan,
-		SinceTime:                 sinceTime,
-		OutputPath:                v.GetString("output"),
-		Redact:                    v.GetBool("redact"),
-		FromCLI:                   true,
-		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
+		CollectorProgressCallback:       collectorCB,
+		CollectWithoutPermissions:       v.GetBool("collect-without-permissions"),
+		RemoteHostCollectTimeoutSeconds: v.GetInt("remote-host-collect-timeout"),
+		KubernetesRestConfig:            restConfig,
+		Namespace:                       v.GetString("namespace"),
+		ProgressChan:                    progressChan,
+		SinceTime:                       sinceTime,
+		OutputPath:                      v.GetString("output"),
+		Redact:                          v.GetBool("redact"),
+		FromCLI:                         true,
+		RunHostCollectorsInPod:          mainBundle.Spec.RunHostCollectorsInPod,
 
 		// Phase 4: Tokenization options
 		Tokenize:            v.GetBool("tokenize"),
@@ -220,6 +226,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		VerifyTokenization:  v.GetBool("verify-tokenization"),
 		BundleID:            v.GetString("bundle-id"),
 		TokenizationStats:   v.GetBool("tokenization-stats"),
+		UserMetadata:        userMetadata,
 	}
 
 	nonInteractiveOutput := analysisOutput{}
@@ -624,4 +631,19 @@ func VerifyTokenizationSetup(v *viper.Viper) error {
 	}
 
 	return nil
+}
+
+func parseMetadataFlag(values []string) (map[string]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	metadata := make(map[string]string, len(values))
+	for _, v := range values {
+		k, val, ok := strings.Cut(v, "=")
+		if !ok {
+			return nil, fmt.Errorf("invalid metadata format %q, expected key=value", v)
+		}
+		metadata[k] = val
+	}
+	return metadata, nil
 }

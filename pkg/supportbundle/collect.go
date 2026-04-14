@@ -366,6 +366,7 @@ func getExecOutputs(
 
 func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) (map[string][]byte, error) {
 	output := collect.NewResult()
+	timeoutSec := getCollectTimeout(opts)
 
 	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
@@ -388,7 +389,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	}
 
 	// wait for at least one pod to be scheduled
-	err = waitForDS(ctx, clientset, ds)
+	err = waitForDS(ctx, clientset, ds, timeoutSec)
 	if err != nil {
 		return nil, err
 	}
@@ -443,16 +444,16 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		klog.V(2).Infof("HostCollector spec: %s", specJSON)
 		for _, pod := range pods.Items {
 			eg.Go(func() error {
-				if err := waitForPodRunning(ctx, clientset, &pod); err != nil {
+				if err := waitForPodRunning(ctx, clientset, &pod, timeoutSec); err != nil {
 					return err
 				}
 
-				stdout, _, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
+				stdout, stderr, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
 				if err != nil {
 					// span.SetStatus(codes.Error, err.Error())
 					msg := fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
 					opts.CollectorProgressCallback(opts.ProgressChan, msg)
-					return errors.Wrap(err, "failed to run remote host collector")
+					return errors.Wrapf(err, "failed to run remote host collector: %s", string(stderr))
 				}
 
 				result := map[string]string{}
@@ -610,8 +611,8 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 	return createdDS, nil
 }
 
-func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) error {
-	timeoutCh := time.After(defaultTimeout * time.Second)
+func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod, timeoutSec int) error {
+	timeoutCh := time.After(time.Duration(timeoutSec) * time.Second)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -639,8 +640,8 @@ func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod 
 	}
 }
 
-func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.DaemonSet) error {
-	timeoutCh := time.After(defaultTimeout * time.Second)
+func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.DaemonSet, timeoutSec int) error {
+	timeoutCh := time.After(time.Duration(timeoutSec) * time.Second)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -685,4 +686,11 @@ func saveNodeList(result collect.CollectorResult, opts SupportBundleCreateOpts, 
 	}
 
 	return nil
+}
+
+func getCollectTimeout(opts SupportBundleCreateOpts) int {
+	if opts.RemoteHostCollectTimeoutSeconds > 0 {
+		return opts.RemoteHostCollectTimeoutSeconds
+	}
+	return defaultTimeout
 }

@@ -57,3 +57,7 @@ cmd/troubleshoot/troubleshoot
 cmd/*/troubleshoot
 /support-bundle
 /.worktrees/
+
+# IDEs
+## IntelliJ / GoLand
+/troubleshoot.iml

@@ -9,10 +9,14 @@ builds:
     main: ./cmd/preflight/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
-    goarch: [amd64, arm, arm64]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
@@ -32,10 +36,14 @@ builds:
     main: ./cmd/troubleshoot/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
-    goarch: [amd64, arm, arm64]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
@@ -50,6 +58,33 @@ builds:
       - -tags=containers_image_openpgp
       - -installsuffix=netgo
     binary: support-bundle
+
+  - id: collect
+    main: ./cmd/collect/main.go
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm, arm64, riscv64]
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: riscv64
+      - goos: darwin
+        goarch: riscv64
+    ldflags:
+      - -s -w
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{ .Commit }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{ .Date }}
+      - -extldflags "-static"
+    flags:
+      - -tags=netgo
+      - -tags=containers_image_ostree_stub
+      - -tags=exclude_graphdriver_devicemapper
+      - -tags=exclude_graphdriver_btrfs
+      - -tags=containers_image_openpgp
+      - -installsuffix=netgo
+    binary: collect
 
 archives:
   - id: preflight
@@ -135,7 +170,7 @@ dockers:
     ids:
       - support-bundle
       - preflight
-    skip_push: true
+      - collect
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:latest"
@@ -145,7 +180,7 @@ dockers:
     ids:
       - support-bundle
       - preflight
-    skip_push: true
+      - collect
 
 universal_binaries:
   - id: preflight-universal

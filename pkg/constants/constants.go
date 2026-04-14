@@ -63,6 +63,7 @@ const (
 	CLUSTER_RESOURCES_CONFIGMAPS                        = "configmaps"
 	CLUSTER_RESOURCES_REPLICATED_LICENSE                = "license.json"
 	CLUSTER_RESOURCES_CERTIFICATE_SIGNING_REQUESTS      = "certificatesigningrequests"
+	CLUSTER_RESOURCES_INGRESS_CLASS                     = "ingress-classes"
 	CLUSTER_RESOURCES_VALIDATING_WEBHOOK_CONFIGURATIONS = "validating-webhook-configurations"
 	CLUSTER_RESOURCES_MUTATING_WEBHOOK_CONFIGURATIONS   = "mutating-webhook-configurations"
 

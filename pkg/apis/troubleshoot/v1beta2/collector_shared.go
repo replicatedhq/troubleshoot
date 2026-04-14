@@ -318,37 +318,55 @@ type Etcd struct {
 	Image         string `json:"image" yaml:"image"`
 }
 
+type SupportBundleMetadata struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+}
+
+type S3Status struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	BucketName      string `json:"bucketName" yaml:"bucketName"`
+	Region          string `json:"region,omitempty" yaml:"region,omitempty"`
+	Endpoint        string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	AccessKeyID     string `json:"accessKeyID,omitempty" yaml:"accessKeyID,omitempty"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" yaml:"secretAccessKey,omitempty"`
+	UsePathStyle    bool   `json:"usePathStyle,omitempty" yaml:"usePathStyle,omitempty"`
+	Insecure        bool   `json:"insecure,omitempty" yaml:"insecure,omitempty"`
+}
+
 type Collect struct {
-	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
-	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
-	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
-	CustomMetrics    *CustomMetrics    `json:"customMetrics,omitempty" yaml:"customMetrics,omitempty"`
-	ConfigMap        *ConfigMap        `json:"configMap,omitempty" yaml:"configMap,omitempty"`
-	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
-	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
-	RunPod           *RunPod           `json:"runPod,omitempty" yaml:"runPod,omitempty"`
-	RunDaemonSet     *RunDaemonSet     `json:"runDaemonSet,omitempty" yaml:"runDaemonSet,omitempty"`
-	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
-	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
-	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
-	CopyFromHost     *CopyFromHost     `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
-	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
-	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
-	Mssql            *Database         `json:"mssql,omitempty" yaml:"mssql,omitempty"`
-	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
-	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
-	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
-	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
-	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
-	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
-	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
-	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
-	Goldpinger       *Goldpinger       `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
-	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
-	NodeMetrics      *NodeMetrics      `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
-	DNS              *DNS              `json:"dns,omitempty" yaml:"dns,omitempty"`
-	Etcd             *Etcd             `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	ClusterInfo           *ClusterInfo           `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
+	ClusterResources      *ClusterResources      `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
+	Secret                *Secret                `json:"secret,omitempty" yaml:"secret,omitempty"`
+	CustomMetrics         *CustomMetrics         `json:"customMetrics,omitempty" yaml:"customMetrics,omitempty"`
+	ConfigMap             *ConfigMap             `json:"configMap,omitempty" yaml:"configMap,omitempty"`
+	Logs                  *Logs                  `json:"logs,omitempty" yaml:"logs,omitempty"`
+	Run                   *Run                   `json:"run,omitempty" yaml:"run,omitempty"`
+	RunPod                *RunPod                `json:"runPod,omitempty" yaml:"runPod,omitempty"`
+	RunDaemonSet          *RunDaemonSet          `json:"runDaemonSet,omitempty" yaml:"runDaemonSet,omitempty"`
+	Exec                  *Exec                  `json:"exec,omitempty" yaml:"exec,omitempty"`
+	Data                  *Data                  `json:"data,omitempty" yaml:"data,omitempty"`
+	Copy                  *Copy                  `json:"copy,omitempty" yaml:"copy,omitempty"`
+	CopyFromHost          *CopyFromHost          `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
+	HTTP                  *HTTP                  `json:"http,omitempty" yaml:"http,omitempty"`
+	Postgres              *Database              `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mssql                 *Database              `json:"mssql,omitempty" yaml:"mssql,omitempty"`
+	Mysql                 *Database              `json:"mysql,omitempty" yaml:"mysql,omitempty"`
+	Redis                 *Database              `json:"redis,omitempty" yaml:"redis,omitempty"`
+	Collectd              *Collectd              `json:"collectd,omitempty" yaml:"collectd,omitempty"`
+	Ceph                  *Ceph                  `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	Longhorn              *Longhorn              `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
+	RegistryImages        *RegistryImages        `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
+	Sysctl                *Sysctl                `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	Certificates          *Certificates          `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	Helm                  *Helm                  `json:"helm,omitempty" yaml:"helm,omitempty"`
+	Goldpinger            *Goldpinger            `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
+	Sonobuoy              *Sonobuoy              `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
+	NodeMetrics           *NodeMetrics           `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
+	DNS                   *DNS                   `json:"dns,omitempty" yaml:"dns,omitempty"`
+	Etcd                  *Etcd                  `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	SupportBundleMetadata *SupportBundleMetadata `json:"supportBundleMetadata,omitempty" yaml:"supportBundleMetadata,omitempty"`
+	S3Status              *S3Status              `json:"s3Status,omitempty" yaml:"s3Status,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -568,6 +586,21 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 		})
 	} else if c.Sysctl != nil {
 		// TODO
+	} else if c.SupportBundleMetadata != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.SupportBundleMetadata.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "secrets",
+				Subresource: "",
+				Name:        "replicated-support-metadata",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.S3Status != nil {
+		// NOOP
 	}
 
 	return result
@@ -670,6 +703,14 @@ func (c *Collect) GetName() string {
 	if c.Certificates != nil {
 		collector = "certificates"
 		name = c.Certificates.CollectorName
+	}
+	if c.SupportBundleMetadata != nil {
+		collector = "support-bundle-metadata"
+		name = c.SupportBundleMetadata.CollectorName
+	}
+	if c.S3Status != nil {
+		collector = "s3Status"
+		name = c.S3Status.CollectorName
 	}
 
 	if collector == "" {
