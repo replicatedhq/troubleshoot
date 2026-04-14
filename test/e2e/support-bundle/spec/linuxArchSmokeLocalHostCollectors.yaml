@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: linux-arch-smoke-local-host-collectors
+spec:
+  hostCollectors:
+    - cpu: {}
+    - memory: {}
+    - run:
+        collectorName: uname
+        command: uname
+        args: ["-m"]
