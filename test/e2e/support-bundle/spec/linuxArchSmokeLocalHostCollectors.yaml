@@ -3,6 +3,8 @@ kind: SupportBundle
 metadata:
   name: linux-arch-smoke-local-host-collectors
 spec:
+  collectors:
+    - clusterResources: {}
   hostCollectors:
     - cpu: {}
     - memory: {}
@@ -10,3 +12,12 @@ spec:
         collectorName: uname
         command: uname
         args: ["-m"]
+  analyzers:
+    - nodeResources:
+        checkName: Linux arch smoke node count
+        outcomes:
+          - pass:
+              when: "= 1"
+              message: This cluster has exactly 1 node
+          - fail:
+              message: Expected exactly 1 node in the cluster

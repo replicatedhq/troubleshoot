@@ -132,6 +132,10 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+      - name: Setup K3s
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64,arm,riscv64
@@ -155,49 +159,76 @@ jobs:
           PREFLIGHT_AUTO_UPDATE: "false"
           TROUBLESHOOT_AUTO_UPDATE: "false"
         run: |
+          set -euo pipefail
           tmpdir="$(mktemp -d)"
           trap 'rm -rf "$tmpdir"' EXIT
+          kubeconfig_path="${KUBECONFIG:-$HOME/.kube/config}"
 
-          cat >"$tmpdir/kubeconfig" <<'EOF'
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - name: dummy
-            cluster:
-              server: https://127.0.0.1:6443
-              insecure-skip-tls-verify: true
-          contexts:
-          - name: dummy
-            context:
-              cluster: dummy
-              user: dummy
-          current-context: dummy
-          users:
-          - name: dummy
-            user: {}
-          EOF
+          assert_tar_member() {
+            local archive="$1"
+            local pattern="$2"
+            local label="$3"
+            local member
+            member="$(tar -tf "$archive" | grep -m1 "$pattern" || true)"
+            if [ -z "$member" ]; then
+              echo "Expected ${label} was not found in ${archive}"
+              exit 1
+            fi
+            echo "Found ${label}: ${member}"
+          }
+
+          echo "Using kubeconfig at ${kubeconfig_path}"
+          test -f "${kubeconfig_path}"
+          cp "${kubeconfig_path}" "$tmpdir/kubeconfig"
+
+          echo "Verifying K3s cluster is reachable on the host"
+          kubectl --kubeconfig "$tmpdir/kubeconfig" get nodes -o wide
 
           docker run --rm \
             --platform ${{ matrix.docker_platform }} \
+            --network host \
             -v "$PWD:/src" \
-            -v "$tmpdir:/tmp/riscv64-smoke" \
+            -v "$tmpdir:/tmp/linux-arch-smoke" \
             -w /src \
             alpine:3.21 \
             sh -ec '
               export PREFLIGHT_AUTO_UPDATE=false
               export TROUBLESHOOT_AUTO_UPDATE=false
               /src/bin/support-bundle \
-                --kubeconfig /tmp/riscv64-smoke/kubeconfig \
+                --kubeconfig /tmp/linux-arch-smoke/kubeconfig \
                 --interactive=false \
                 /src/test/e2e/support-bundle/spec/linuxArchSmokeLocalHostCollectors.yaml \
-                --output /tmp/riscv64-smoke/riscv64-support-bundle.tar.gz
+                --output /tmp/linux-arch-smoke/linux-arch-support-bundle.tar.gz
             '
 
-          tar -tf "$tmpdir/riscv64-support-bundle.tar.gz" | grep -q '/host-collectors/system/cpu.json$'
-          tar -tf "$tmpdir/riscv64-support-bundle.tar.gz" | grep -q '/host-collectors/system/memory.json$'
-          tar -tf "$tmpdir/riscv64-support-bundle.tar.gz" | grep -q '/host-collectors/run-host/uname.txt$'
-          uname_path="$(tar -tf "$tmpdir/riscv64-support-bundle.tar.gz" | grep '/host-collectors/run-host/uname.txt$')"
-          tar -xOf "$tmpdir/riscv64-support-bundle.tar.gz" "$uname_path" | grep -q '^${{ matrix.expected_machine }}$'
+          archive="$tmpdir/linux-arch-support-bundle.tar.gz"
+          test -f "$archive"
+          echo "Generated support bundle archive: $archive"
+
+          assert_tar_member "$archive" '/host-collectors/system/cpu.json$' 'cpu.json'
+          assert_tar_member "$archive" '/host-collectors/system/memory.json$' 'memory.json'
+          assert_tar_member "$archive" '/host-collectors/run-host/uname.txt$' 'uname.txt'
+          assert_tar_member "$archive" '/cluster-resources/nodes.json$' 'cluster-resources nodes.json'
+          assert_tar_member "$archive" '/cluster-resources/resources.json$' 'cluster-resources resources.json'
+          assert_tar_member "$archive" '/analysis.json$' 'analysis.json'
+
+          uname_path="$(tar -tf "$archive" | grep -m1 '/host-collectors/run-host/uname.txt$')"
+          uname_machine="$(tar -xOf "$archive" "$uname_path" | tr -d '\r\n')"
+          if [ "$uname_machine" != '${{ matrix.expected_machine }}' ]; then
+            echo "Unexpected uname -m output: ${uname_machine}"
+            exit 1
+          fi
+          echo "Analyzer input check passed: uname -m reported ${uname_machine}"
+
+          analysis_path="$(tar -tf "$archive" | grep -m1 '/analysis.json$')"
+          tar -xOf "$archive" "$analysis_path" > "$tmpdir/analysis.json"
+          jq -e '
+            .[]
+            | select(.insight.primary == "Linux arch smoke node count")
+            | select(.insight.detail == "This cluster has exactly 1 node")
+            | select(.severity == "debug")
+          ' "$tmpdir/analysis.json" >/dev/null
+          echo "Found expected analyzer result: Linux arch smoke node count -> This cluster has exactly 1 node"
 
   # E2E tests
   e2e:
