@@ -165,11 +165,10 @@ jobs:
           kubeconfig_path="${KUBECONFIG:-$HOME/.kube/config}"
 
           assert_tar_member() {
-            local archive="$1"
-            local pattern="$2"
-            local label="$3"
+            local pattern="$1"
+            local label="$2"
             local member
-            member="$(tar -tf "$archive" | grep -m1 "$pattern" || true)"
+            member="$(grep -m1 "$pattern" "$tmpdir/archive-members.txt" || true)"
             if [ -z "$member" ]; then
               echo "Expected ${label} was not found in ${archive}"
               exit 1
@@ -204,15 +203,17 @@ jobs:
           archive="$tmpdir/linux-arch-support-bundle.tar.gz"
           test -f "$archive"
           echo "Generated support bundle archive: $archive"
+          tar -tf "$archive" > "$tmpdir/archive-members.txt"
 
-          assert_tar_member "$archive" '/host-collectors/system/cpu.json$' 'cpu.json'
-          assert_tar_member "$archive" '/host-collectors/system/memory.json$' 'memory.json'
-          assert_tar_member "$archive" '/host-collectors/run-host/uname.txt$' 'uname.txt'
-          assert_tar_member "$archive" '/cluster-resources/nodes.json$' 'cluster-resources nodes.json'
-          assert_tar_member "$archive" '/cluster-resources/resources.json$' 'cluster-resources resources.json'
-          assert_tar_member "$archive" '/analysis.json$' 'analysis.json'
+          assert_tar_member '/host-collectors/system/cpu.json$' 'cpu.json'
+          assert_tar_member '/host-collectors/system/memory.json$' 'memory.json'
+          assert_tar_member '/host-collectors/run-host/uname.txt$' 'uname.txt'
+          assert_tar_member '/cluster-resources/nodes.json$' 'cluster-resources nodes.json'
+          assert_tar_member '/cluster-resources/resources.json$' 'cluster-resources resources.json'
+          assert_tar_member '/analysis.json$' 'analysis.json'
 
-          uname_path="$(tar -tf "$archive" | grep -m1 '/host-collectors/run-host/uname.txt$')"
+          echo "Checking uname -m output"
+          uname_path="$(grep -m1 '/host-collectors/run-host/uname.txt$' "$tmpdir/archive-members.txt")"
           uname_machine="$(tar -xOf "$archive" "$uname_path" | tr -d '\r\n')"
           if [ "$uname_machine" != '${{ matrix.expected_machine }}' ]; then
             echo "Unexpected uname -m output: ${uname_machine}"
@@ -220,7 +221,8 @@ jobs:
           fi
           echo "Analyzer input check passed: uname -m reported ${uname_machine}"
 
-          analysis_path="$(tar -tf "$archive" | grep -m1 '/analysis.json$')"
+          echo "Checking analysis.json"
+          analysis_path="$(grep -m1 '/analysis.json$' "$tmpdir/archive-members.txt")"
           tar -xOf "$archive" "$analysis_path" > "$tmpdir/analysis.json"
           jq -e '
             .[]
