@@ -172,9 +172,12 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 				case string:
 					if strings.Contains(msg, "skipping collector") {
 						klog.Warningf("Collecting support bundle: %s", msg)
+					} else {
+						klog.Infof("Collecting support bundle: %s", msg)
 					}
+				default:
+					klog.Infof("Collecting support bundle: %v", msg)
 				}
-				klog.Infof("Collecting support bundle: %v", msg)
 			}
 		}()
 	} else {
