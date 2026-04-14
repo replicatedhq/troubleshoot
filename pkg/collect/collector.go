@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -294,6 +296,32 @@ func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troublesho
 		}
 	}
 	return finalCollectors
+}
+
+// SkippedCollector records information about a collector that was skipped during collection.
+type SkippedCollector struct {
+	Collector string   `json:"collector"`
+	Reason    string   `json:"reason"`
+	Errors    []string `json:"errors"`
+	Timestamp string   `json:"timestamp"`
+}
+
+// WriteSkippedCollectors marshals the skipped collectors list and writes it to both
+// the in-memory collected data map and optionally to disk at bundlePath.
+func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData CollectorResult, bundlePath string) {
+	if len(skipped) == 0 {
+		return
+	}
+	skippedJSON, err := json.Marshal(skipped)
+	if err != nil {
+		return
+	}
+	allCollectedData["skipped-collectors.json"] = skippedJSON
+	if bundlePath != "" {
+		if writeErr := os.MkdirAll(bundlePath, 0755); writeErr == nil {
+			_ = os.WriteFile(filepath.Join(bundlePath, "skipped-collectors.json"), skippedJSON, 0644)
+		}
+	}
 }
 
 // Ensure Copy collectors are last in the list
