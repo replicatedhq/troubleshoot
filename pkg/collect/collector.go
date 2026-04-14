@@ -236,7 +236,6 @@ func getCollectorName(c interface{}) string {
 	default:
 		collector = "<none>"
 	}
-
 	if name != "" {
 		return fmt.Sprintf("%s/%s", collector, name)
 	}
