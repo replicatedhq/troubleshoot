@@ -322,10 +322,10 @@ func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData map[str
 	c := CollectorResult{}
 	if err := c.SaveResult(bundlePath, "skipped-collectors.json", bytes.NewReader(skippedJSON)); err != nil {
 		klog.Errorf("Failed to save skipped collectors: %v", err)
+	} else {
+		// Write to collected data to return downstream
+		maps.Copy(allCollectedData, c)
 	}
-
-	// Write to collected data to return downstream
-	maps.Copy(allCollectedData, c)
 }
 
 // Ensure Copy collectors are last in the list
