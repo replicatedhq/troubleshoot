@@ -1,6 +1,9 @@
 package collect
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -516,6 +519,91 @@ func TestEnsureCopyLast(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := EnsureCopyLast(tt.allCollectors)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestWriteSkippedCollectors(t *testing.T) {
+	tests := []struct {
+		name        string
+		skipped     []SkippedCollector
+		bundlePath  string
+		useTempDir  bool
+		wantInMap   bool
+		wantOnDisk  bool
+		wantEntries []SkippedCollector
+	}{
+		{
+			name:       "empty skipped list does nothing",
+			skipped:    nil,
+			bundlePath: "",
+			wantInMap:  false,
+		},
+		{
+			name: "in-memory only when bundlePath is empty",
+			skipped: []SkippedCollector{
+				{Collector: "clusterResources", Reason: "excluded", Timestamp: "2026-01-01T00:00:00Z"},
+			},
+			bundlePath: "",
+			wantInMap:  true,
+			wantOnDisk: false,
+			wantEntries: []SkippedCollector{
+				{Collector: "clusterResources", Reason: "excluded", Timestamp: "2026-01-01T00:00:00Z"},
+			},
+		},
+		{
+			name: "writes to disk when bundlePath is set",
+			skipped: []SkippedCollector{
+				{Collector: "clusterResources", Reason: "excluded", Timestamp: "2026-01-01T00:00:00Z"},
+				{Collector: "logs", Reason: "insufficient RBAC permissions", Errors: []string{"pods is forbidden"}, Timestamp: "2026-01-01T00:00:01Z"},
+			},
+			useTempDir: true,
+			wantInMap:  true,
+			wantOnDisk: true,
+			wantEntries: []SkippedCollector{
+				{Collector: "clusterResources", Reason: "excluded", Timestamp: "2026-01-01T00:00:00Z"},
+				{Collector: "logs", Reason: "insufficient RBAC permissions", Errors: []string{"pods is forbidden"}, Timestamp: "2026-01-01T00:00:01Z"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bundlePath := tt.bundlePath
+			if tt.useTempDir {
+				bundlePath = t.TempDir()
+			}
+
+			result := CollectorResult{}
+			WriteSkippedCollectors(tt.skipped, result, bundlePath)
+
+			if !tt.wantInMap {
+				assert.Empty(t, result)
+				return
+			}
+
+			// Verify in-memory entry exists
+			if bundlePath == "" {
+				// In-memory mode: data is stored in the map
+				data, ok := result["skipped-collectors.json"]
+				require.True(t, ok, "skipped-collectors.json should be in result map")
+				require.NotNil(t, data)
+
+				var got []SkippedCollector
+				require.NoError(t, json.Unmarshal(data, &got))
+				assert.Equal(t, tt.wantEntries, got)
+			} else {
+				// On-disk mode: map entry exists with nil value, file is on disk
+				_, ok := result["skipped-collectors.json"]
+				require.True(t, ok, "skipped-collectors.json should be in result map")
+
+				diskData, err := os.ReadFile(filepath.Join(bundlePath, "skipped-collectors.json"))
+				require.NoError(t, err)
+
+				var got []SkippedCollector
+				require.NoError(t, json.Unmarshal(diskData, &got))
+				assert.Equal(t, tt.wantEntries, got)
+			}
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type Collector interface {
@@ -304,8 +306,8 @@ type SkippedCollector struct {
 	Timestamp string   `json:"timestamp"`
 }
 
-// WriteSkippedCollectors marshals the skipped collectors list and writes it to both
-// the in-memory collected data map and optionally to disk at bundlePath.
+// WriteSkippedCollectors marshals the skipped collectors list and saves it
+// using SaveResult which handles both in-memory and on-disk storage.
 func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData CollectorResult, bundlePath string) {
 	if len(skipped) == 0 {
 		return
@@ -314,7 +316,9 @@ func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData Collect
 	if err != nil {
 		return
 	}
-	allCollectedData["skipped-collectors.json"] = skippedJSON
+	if err := allCollectedData.SaveResult(bundlePath, "skipped-collectors.json", bytes.NewReader(skippedJSON)); err != nil {
+		klog.Errorf("Failed to save skipped collectors: %v", err)
+	}
 }
 
 // Ensure Copy collectors are last in the list

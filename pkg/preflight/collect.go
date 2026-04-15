@@ -184,7 +184,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
 	collectorTypeOrder := make([]reflect.Type, 0) // Preserve order of collector types
-	allCollectedData := make(map[string][]byte)
+	allCollectedData := collect.CollectorResult{}
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, opts.BundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
