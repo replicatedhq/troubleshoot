@@ -61,6 +61,9 @@ test: generate fmt vet
 test-integration: generate fmt vet
 	go test -v --tags="integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
 
+.PHONY: e2e
+e2e: preflight-e2e-test support-bundle-e2e-test support-bundle-e2e-go-test
+
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
