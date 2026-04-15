@@ -39,9 +39,8 @@ import (
 )
 
 const (
-	selectorLabelKey   = "ds-selector-label"
-	selectorLabelValue = "remote-host-collector"
-	defaultTimeout     = 30
+	selectorLabelKey = "ds-selector-label"
+	defaultTimeout   = 30
 )
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
