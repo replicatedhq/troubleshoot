@@ -39,9 +39,8 @@ import (
 )
 
 const (
-	selectorLabelKey   = "ds-selector-label"
-	selectorLabelValue = "remote-host-collector"
-	defaultTimeout     = 30
+	selectorLabelKey = "ds-selector-label"
+	defaultTimeout   = 30
 )
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -107,7 +106,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
 	collectorTypeOrder := make([]reflect.Type, 0) // Preserve order of collector types
-	allCollectedData := make(map[string][]byte)
+	allCollectedData := map[string][]byte{}
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
@@ -155,6 +154,8 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	// move Copy Collectors if any to the end of the execution list
 	allCollectors = collect.EnsureCopyLast(allCollectors)
 
+	var skippedCollectors []collect.SkippedCollector
+
 	for _, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
@@ -165,6 +166,13 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
+
+			skippedCollectors = append(skippedCollectors, collect.SkippedCollector{
+				Collector: collector.Title(),
+				Reason:    "excluded",
+				Timestamp: time.Now().Format(time.RFC3339),
+			})
+
 			continue
 		}
 
@@ -175,6 +183,19 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
+
+				rbacErrors := collector.GetRBACErrors()
+				errorMessages := make([]string, 0, len(rbacErrors))
+				for _, e := range rbacErrors {
+					errorMessages = append(errorMessages, e.Error())
+				}
+				skippedCollectors = append(skippedCollectors, collect.SkippedCollector{
+					Collector: collector.Title(),
+					Reason:    "insufficient RBAC permissions",
+					Errors:    errorMessages,
+					Timestamp: time.Now().Format(time.RFC3339),
+				})
+
 				continue
 			}
 		}
@@ -206,6 +227,9 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		}
 		span.End()
 	}
+
+	// Write skipped collectors manifest to the bundle so users can see what was missed
+	collect.WriteSkippedCollectors(skippedCollectors, allCollectedData, bundlePath)
 
 	collectResult := allCollectedData
 

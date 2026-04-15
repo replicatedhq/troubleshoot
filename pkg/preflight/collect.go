@@ -245,6 +245,8 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	// move Copy Collectors if any to the end of the execution list
 	allCollectors = collect.EnsureCopyLast(allCollectors)
 
+	var skippedCollectors []collect.SkippedCollector
+
 	for i, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
@@ -254,6 +256,13 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 			klog.V(1).Infof("excluding %q collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
+
+			skippedCollectors = append(skippedCollectors, collect.SkippedCollector{
+				Collector: collector.Title(),
+				Reason:    "excluded",
+				Timestamp: time.Now().Format(time.RFC3339),
+			})
+
 			continue
 		}
 
@@ -270,6 +279,19 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 				}
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
+
+				rbacErrors := collector.GetRBACErrors()
+				errorMessages := make([]string, 0, len(rbacErrors))
+				for _, e := range rbacErrors {
+					errorMessages = append(errorMessages, e.Error())
+				}
+				skippedCollectors = append(skippedCollectors, collect.SkippedCollector{
+					Collector: collector.Title(),
+					Reason:    "insufficient RBAC permissions",
+					Errors:    errorMessages,
+					Timestamp: time.Now().Format(time.RFC3339),
+				})
+
 				continue
 			}
 		}
@@ -319,6 +341,9 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 		}
 		span.End()
 	}
+
+	// Write skipped collectors manifest so users can see what was missed
+	collect.WriteSkippedCollectors(skippedCollectors, allCollectedData, opts.BundlePath)
 
 	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
 	collectResult.AllCollectedData = allCollectedData

@@ -87,9 +87,14 @@ func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollec
 		pod := pods[0]
 		stdout, stderr, execErrors := getExecOutputs(ctx, clientConfig, client, pod, execCollector)
 
+		container := pod.Spec.Containers[0].Name
+		if execCollector.ContainerName != "" {
+			container = execCollector.ContainerName
+		}
+
 		filePrefix := execCollector.CollectorName
 		if filePrefix == "" {
-			filePrefix = execCollector.ContainerName
+			filePrefix = container
 		}
 
 		path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)

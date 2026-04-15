@@ -1,9 +1,11 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type Collector interface {
@@ -294,6 +297,35 @@ func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troublesho
 		}
 	}
 	return finalCollectors
+}
+
+// SkippedCollector records information about a collector that was skipped during collection.
+type SkippedCollector struct {
+	Collector string   `json:"collector"`
+	Reason    string   `json:"reason"`
+	Errors    []string `json:"errors"`
+	Timestamp string   `json:"timestamp"`
+}
+
+// WriteSkippedCollectors marshals the skipped collectors list and saves it
+// using SaveResult which handles both in-memory and on-disk storage.
+func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData map[string][]byte, bundlePath string) {
+	if len(skipped) == 0 {
+		return
+	}
+	skippedJSON, err := json.Marshal(skipped)
+	if err != nil {
+		return
+	}
+
+	// Either write to bundle path or memory
+	c := CollectorResult{}
+	if err := c.SaveResult(bundlePath, "skipped-collectors.json", bytes.NewReader(skippedJSON)); err != nil {
+		klog.Errorf("Failed to save skipped collectors: %v", err)
+	} else {
+		// Write to collected data to return downstream
+		maps.Copy(allCollectedData, c)
+	}
 }
 
 // Ensure Copy collectors are last in the list
