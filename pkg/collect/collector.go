@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -317,11 +315,6 @@ func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData Collect
 		return
 	}
 	allCollectedData["skipped-collectors.json"] = skippedJSON
-	if bundlePath != "" {
-		if writeErr := os.MkdirAll(bundlePath, 0755); writeErr == nil {
-			_ = os.WriteFile(filepath.Join(bundlePath, "skipped-collectors.json"), skippedJSON, 0644)
-		}
-	}
 }
 
 // Ensure Copy collectors are last in the list
