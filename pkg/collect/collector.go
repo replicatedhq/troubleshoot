@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -324,7 +325,7 @@ func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData map[str
 	}
 
 	// Write to collected data to return downstream
-	c.AddResult(allCollectedData)
+	maps.Copy(allCollectedData, c)
 }
 
 // Ensure Copy collectors are last in the list

@@ -88,7 +88,7 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 // It also ensures that when operating on the results in memory (e.g preflights),
 // all files are included.
 func (r CollectorResult) AddResult(other CollectorResult) {
-	maps.Copy(other, r)
+	maps.Copy(r, other)
 }
 
 // SaveResult saves the collector result to relativePath file on disk. If bundlePath is
