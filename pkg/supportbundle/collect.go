@@ -106,7 +106,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
 	collectorTypeOrder := make([]reflect.Type, 0) // Preserve order of collector types
-	allCollectedData := collect.CollectorResult{}
+	allCollectedData := map[string][]byte{}
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {

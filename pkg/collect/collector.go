@@ -308,7 +308,7 @@ type SkippedCollector struct {
 
 // WriteSkippedCollectors marshals the skipped collectors list and saves it
 // using SaveResult which handles both in-memory and on-disk storage.
-func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData CollectorResult, bundlePath string) {
+func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData map[string][]byte, bundlePath string) {
 	if len(skipped) == 0 {
 		return
 	}
@@ -316,9 +316,15 @@ func WriteSkippedCollectors(skipped []SkippedCollector, allCollectedData Collect
 	if err != nil {
 		return
 	}
-	if err := allCollectedData.SaveResult(bundlePath, "skipped-collectors.json", bytes.NewReader(skippedJSON)); err != nil {
+
+	// Either write to bundle path or memory
+	c := CollectorResult{}
+	if err := c.SaveResult(bundlePath, "skipped-collectors.json", bytes.NewReader(skippedJSON)); err != nil {
 		klog.Errorf("Failed to save skipped collectors: %v", err)
 	}
+
+	// Write to collected data to return downstream
+	c.AddResult(allCollectedData)
 }
 
 // Ensure Copy collectors are last in the list
