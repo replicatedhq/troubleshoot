@@ -27,4 +27,4 @@ Collectors live in `pkg/collect/`, analyzers in `pkg/analyze/`. When adding eith
 
 ## Code Review
 
-See [REVIEW.md](REVIEW.md) for the full review checklist covering basic checks (API breaks, pattern violations, security, test coverage) and advanced checks (cross-feature impact, CLI vs SDK consumers, documentation needs).
+See [.cursor/BUGBOT.md](.cursor/BUGBOT.md) for the full review checklist covering basic checks (API breaks, pattern violations, security, test coverage) and advanced checks (cross-feature impact, CLI vs SDK consumers, documentation needs).
