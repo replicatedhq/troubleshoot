@@ -19,4 +19,4 @@
 - **Dedicated documentation needs** — For large or complex changes, consider whether CLI users or SDK consumers need standalone documentation (migration guides, new feature walkthroughs, updated examples).
 - **Backwards compatibility** — Spec changes must consider existing specs in the wild. New fields should have sensible zero-value defaults. Removed fields should not cause parse failures.
 - **Downstream impact on sbctl** — Changes to public Go packages (`pkg/collect`, `pkg/analyze`, API types, etc.) may require follow-up changes in [replicatedhq/sbctl](https://github.com/replicatedhq/sbctl), which imports this project as a dependency. Flag any breaking or behavioral changes that could affect sbctl.
-- **Repository docs** — If your changes affect build commands, architecture, project conventions, or review guidelines, update `CLAUDE.md`, `README.md`, and `REVIEW.md` accordingly.
+- **Repository docs** — If your changes affect build commands, architecture, project conventions, or review guidelines, update `CLAUDE.md`, `README.md`, and this file accordingly.
