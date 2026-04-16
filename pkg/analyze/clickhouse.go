@@ -46,6 +46,57 @@ func (a *AnalyzeClickhouse) collectorName() string {
 	return "clickhouse"
 }
 
+func compareClickhouseConditionalToActual(conditional string, result *collect.DatabaseConnection) (bool, error) {
+	parts := strings.Split(strings.TrimSpace(conditional), " ")
+
+	if len(parts) != 3 {
+		return false, errors.New("unable to parse conditional")
+	}
+
+	switch parts[0] {
+	case "connected":
+		expected, err := strconv.ParseBool(parts[2])
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse bool")
+		}
+
+		switch parts[1] {
+		case "=", "==", "===":
+			return expected == result.IsConnected, nil
+		case "!=", "!==":
+			return expected != result.IsConnected, nil
+		}
+
+		return false, errors.New("unable to parse ClickHouse connected analyzer")
+
+	case "version":
+		expected, err := version.NewVersion(strings.ReplaceAll(parts[2], "x", "0"))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse expected version")
+		}
+
+		operation := parts[1]
+		switch operation {
+		case "=", "==", "===":
+			operation = "="
+		case "!=", "!==":
+			operation = "!="
+		}
+
+		actual, err := version.NewVersion(strings.ReplaceAll(result.Version, "x", "0"))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse ClickHouse db actual version")
+		}
+
+		constraints, err := version.NewConstraint(fmt.Sprintf("%s %s", operation, expected))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to create constraint")
+		}
+		return constraints.Check(actual), nil
+	}
+
+	return false, nil
+}
 
 func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fullPath := path.Join("", fmt.Sprintf("clickhouse/%s.json", a.collectorName()))
@@ -76,7 +127,7 @@ func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyz
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Fail.When, &databaseConnection)
+			isMatch, err := compareClickhouseConditionalToActual(outcome.Fail.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare ClickHouse database conditional")
 			}
@@ -102,7 +153,7 @@ func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyz
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Warn.When, &databaseConnection)
+			isMatch, err := compareClickhouseConditionalToActual(outcome.Warn.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare ClickHouse database conditional")
 			}
@@ -123,7 +174,7 @@ func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyz
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Pass.When, &databaseConnection)
+			isMatch, err := compareClickhouseConditionalToActual(outcome.Pass.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare ClickHouse database conditional")
 			}
