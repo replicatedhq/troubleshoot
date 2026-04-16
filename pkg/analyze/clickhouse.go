@@ -43,12 +43,12 @@ func (a *AnalyzeClickhouse) collectorName() string {
 	if a.analyzer.CollectorName != "" {
 		return a.analyzer.CollectorName
 	}
-	return ""
+	return "clickhouse"
 }
 
 
 func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fullPath := path.Join("", fmt.Sprintf("%s.json", a.collectorName()))
+	fullPath := path.Join("", fmt.Sprintf("clickhouse/%s.json", a.collectorName()))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
