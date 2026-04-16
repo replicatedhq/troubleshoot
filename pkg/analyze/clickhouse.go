@@ -114,7 +114,7 @@ func (a *AnalyzeClickhouse) analyze(analyzer *troubleshootv1beta2.DatabaseAnalyz
 	result := &AnalyzeResult{
 		Title:   a.Title(),
 		IconKey: "kubernetes__analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/-analyze.svg",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/clickhouse-analyze.svg",
 	}
 
 	for _, outcome := range analyzer.Outcomes {
