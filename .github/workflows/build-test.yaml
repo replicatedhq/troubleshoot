@@ -136,7 +136,7 @@ jobs:
         uses: replicatedhq/action-k3s@main
         with:
           version: v1.31.2-k3s1
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64,arm,riscv64
 
