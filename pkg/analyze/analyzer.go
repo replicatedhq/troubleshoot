@@ -238,6 +238,8 @@ func GetAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeMssql{analyzer: analyzer.Mssql}
 	case analyzer.Redis != nil:
 		return &AnalyzeRedis{analyzer: analyzer.Redis}
+	case analyzer.ClickHouse != nil:
+		return &AnalyzeClickhouse{analyzer: analyzer.ClickHouse}
 	case analyzer.CephStatus != nil:
 		return &AnalyzeCephStatus{analyzer: analyzer.CephStatus}
 	case analyzer.Velero != nil:
