@@ -13,12 +13,21 @@ import (
 )
 
 // RegistryImagesSummary is passed as template data when rendering outcome messages.
-// Fields are exported so Go templates can reference them (e.g. {{ .Missing }}).
-// Use len in templates for counts, e.g. {{ len .Missing }}.
+// Fields are exported so Go templates can reference them.
+//
+//   - Verified: images confirmed to exist in the registry.
+//   - Missing: images confirmed not to exist in the registry.
+//   - Errors: images that could not be checked (parse failures, timeouts, auth errors, etc).
+//   - UnverifiedReasons: map of image name to reason string for every unverified image
+//     (union of Missing and Errors).
+//
+// The `when` conditions follow the existing registry images analyzer nomenclature:
+// "verified", "missing", and "errors" (see https://troubleshoot.sh/docs/analyze/registry-images).
 type RegistryImagesSummary struct {
-	Missing  []string
-	Verified []string
-	Errors   []string
+	Verified          []string
+	Missing           []string
+	Errors            []string
+	UnverifiedReasons map[string]string
 }
 
 type AnalyzeHostRegistryImages struct {
@@ -67,6 +76,8 @@ func (a *AnalyzeHostRegistryImages) Analyze(
 			return nil, errors.Wrap(err, "failed to analyze host registry images")
 		}
 		if result != nil {
+			klog.V(2).Infof("registry images analysis result: title=%q pass=%t warn=%t fail=%t message=%q",
+				result.Title, result.IsPass, result.IsWarn, result.IsFail, result.Message)
 			results = append(results, result)
 		}
 	}
@@ -149,18 +160,22 @@ func buildRegistryImagesSummary(data []byte) (*RegistryImagesSummary, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal registry info")
 	}
 
-	summary := &RegistryImagesSummary{}
+	summary := &RegistryImagesSummary{
+		UnverifiedReasons: map[string]string{},
+	}
 	for image, info := range registryInfo.Images {
 		if info.Error != "" {
 			summary.Errors = append(summary.Errors, image)
+			summary.UnverifiedReasons[image] = info.Error
 		} else if !info.Exists {
 			summary.Missing = append(summary.Missing, image)
+			summary.UnverifiedReasons[image] = "image not found in registry"
 		} else {
 			summary.Verified = append(summary.Verified, image)
 		}
 	}
-	slices.Sort(summary.Missing)
 	slices.Sort(summary.Verified)
+	slices.Sort(summary.Missing)
 	slices.Sort(summary.Errors)
 	return summary, nil
 }

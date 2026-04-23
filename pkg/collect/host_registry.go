@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 type CollectHostRegistryImages struct {
@@ -29,16 +30,27 @@ func (c *CollectHostRegistryImages) Collect(progressChan chan<- interface{}) (ma
 	}
 
 	auth := c.resolveAuth()
+	if auth != nil {
+		klog.V(2).Infof("using inline credentials for registry check (username=%s)", c.hostCollector.Username)
+	} else {
+		klog.V(2).Info("no inline credentials provided, using ambient auth")
+	}
+
+	klog.V(2).Infof("checking %d images", len(c.hostCollector.Images))
 	for _, image := range c.hostCollector.Images {
+		klog.V(2).Infof("checking image: %s", image)
 		imageRef, err := parseImageRef(image)
 		if err != nil {
+			klog.Errorf("failed to parse image ref %s: %v", image, err)
 			registryInfo.Images[image] = RegistryImage{Error: err.Error()}
 			continue
 		}
 		exists, err := imageExistsWithAuth(auth, imageRef, image, 10*time.Second)
 		if err != nil {
+			klog.Errorf("image check failed for %s: %v", image, err)
 			registryInfo.Images[image] = RegistryImage{Error: err.Error()}
 		} else {
+			klog.V(2).Infof("image %s exists=%t", image, exists)
 			registryInfo.Images[image] = RegistryImage{Exists: exists}
 		}
 	}

@@ -20,7 +20,7 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 		expectErr   string
 	}{
 		{
-			name:        "all images verified",
+			name:        "all images found",
 			conditional: "missing == 0",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
@@ -31,7 +31,7 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:        "some images missing",
+			name:        "some images not found",
 			conditional: "missing > 0",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
@@ -42,7 +42,7 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:        "verified count matches",
+			name:        "verified count matches found",
 			conditional: "verified == 2",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
@@ -53,7 +53,7 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:        "errors count matches",
+			name:        "errored images counted under errors",
 			conditional: "errors > 0",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
@@ -63,8 +63,8 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:        "errors count zero when no errors",
-			conditional: "errors == 0",
+			name:        "no errors when all found",
+			conditional: "missing == 0",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
 					"registry.example.com/app:v1": {Exists: true},
@@ -73,8 +73,8 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:        "mixed results - missing false",
-			conditional: "missing == 0",
+			name:        "mixed results - missing and errors counted separately",
+			conditional: "missing == 1",
 			data: collect.RegistryInfo{
 				Images: map[string]collect.RegistryImage{
 					"registry.example.com/app:v1": {Exists: true},
@@ -82,7 +82,7 @@ func TestAnalyzeHostRegistryImagesCheckCondition(t *testing.T) {
 					"registry.example.com/app:v3": {Error: "timeout"},
 				},
 			},
-			expected: false,
+			expected: true,
 		},
 		{
 			name:        "invalid conditional format",
@@ -135,7 +135,7 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 		expectedError            string
 	}{
 		{
-			name: "pass when all images exist",
+			name: "pass when all images found",
 			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -165,7 +165,7 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 			},
 		},
 		{
-			name: "fail when images are missing",
+			name: "fail when images not found",
 			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -181,6 +181,36 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 					return json.Marshal(collect.RegistryInfo{
 						Images: map[string]collect.RegistryImage{
 							"registry.example.com/app:v1": {Exists: false},
+						},
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
+				{
+					Title:   "Registry Images",
+					IsFail:  true,
+					Message: "Some images are not available",
+				},
+			},
+		},
+		{
+			name: "errored images matched by errors condition",
+			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "errors > 0",
+							Message: "Some images are not available",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == "host-collectors/registry-images/images.json" {
+					return json.Marshal(collect.RegistryInfo{
+						Images: map[string]collect.RegistryImage{
+							"registry.example.com/app:v1": {Error: "connection refused"},
 						},
 					})
 				}
@@ -248,43 +278,13 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 			expectedError: "file not found",
 		},
 		{
-			name: "warn on errors",
-			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "errors > 0",
-							Message: "Some images could not be checked",
-						},
-					},
-				},
-			},
-			getCollectedFileContents: func(path string) ([]byte, error) {
-				if path == "host-collectors/registry-images/images.json" {
-					return json.Marshal(collect.RegistryInfo{
-						Images: map[string]collect.RegistryImage{
-							"registry.example.com/app:v1": {Error: "connection refused"},
-						},
-					})
-				}
-				return nil, errors.New("file not found")
-			},
-			expectedResults: []*AnalyzeResult{
-				{
-					Title:   "Registry Images",
-					IsWarn:  true,
-					Message: "Some images could not be checked",
-				},
-			},
-		},
-		{
-			name: "template rendering with missing images list",
+			name: "template rendering with NotFound list",
 			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "missing > 0",
-							Message: "Missing images: {{ .Missing | join \", \" }}",
+							Message: "Missing: {{ .Missing | join \", \" }}",
 						},
 					},
 				},
@@ -304,12 +304,42 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 				{
 					Title:   "Registry Images",
 					IsFail:  true,
-					Message: "Missing images: registry.example.com/app:v1",
+					Message: "Missing: registry.example.com/app:v1",
 				},
 			},
 		},
 		{
-			name: "template rendering with counts",
+			name: "template rendering with NotFoundReasons map",
+			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "errors > 0",
+							Message: `{{ range $image, $reason := .UnverifiedReasons }}{{ $image }}: {{ $reason }}; {{ end }}`,
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == "host-collectors/registry-images/images.json" {
+					return json.Marshal(collect.RegistryInfo{
+						Images: map[string]collect.RegistryImage{
+							"registry.example.com/app:v1": {Error: "connection refused"},
+						},
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
+				{
+					Title:   "Registry Images",
+					IsFail:  true,
+					Message: "registry.example.com/app:v1: connection refused; ",
+				},
+			},
+		},
+		{
+			name: "template rendering with Found count",
 			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
