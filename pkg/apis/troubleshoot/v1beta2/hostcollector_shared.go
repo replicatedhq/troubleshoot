@@ -235,6 +235,16 @@ type HostSysctl struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+// HostRegistryImages checks whether images are accessible from the host,
+// without requiring a Kubernetes cluster. Auth can be supplied inline via
+// Username/Password or omitted to rely on ambient credentials (e.g. ~/.docker/config.json).
+type HostRegistryImages struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Images            []string `json:"images" yaml:"images"`
+	Username          string   `json:"username,omitempty" yaml:"username,omitempty"`
+	Password          string   `json:"password,omitempty" yaml:"password,omitempty"`
+}
+
 type HostCollect struct {
 	CPU                          *CPU                              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                       *Memory                           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -265,6 +275,7 @@ type HostCollect struct {
 	HostDNS                      *HostDNS                          `json:"dns,omitempty" yaml:"dns,omitempty"`
 	NetworkNamespaceConnectivity *HostNetworkNamespaceConnectivity `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
 	HostSysctl                   *HostSysctl                       `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	RegistryImages               *HostRegistryImages               `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 }
 
 // GetName gets the name of the collector

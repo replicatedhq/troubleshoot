@@ -102,6 +102,18 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
 
+	return imageExistsWithAuth(authConfig, image, deadline)
+}
+
+// imageExistsWithAuth checks if an image exists in a registry using optional auth credentials.
+// authConfig may be nil for ambient credentials (e.g. ~/.docker/config.json).
+// This is the shared core used by both the cluster-level and host-level registry collectors.
+func imageExistsWithAuth(authConfig *registryAuthConfig, image string, deadline time.Duration) (bool, error) {
+	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to parse image name %s", image)
+	}
+
 	sysCtx := types.SystemContext{
 		DockerDisableV1Ping:         true,
 		DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
