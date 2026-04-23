@@ -28,9 +28,14 @@ func (c *CollectHostRegistryImages) Collect(progressChan chan<- interface{}) (ma
 		Images: map[string]RegistryImage{},
 	}
 
+	auth := c.resolveAuth()
 	for _, image := range c.hostCollector.Images {
-		auth := c.resolveAuth()
-		exists, err := imageExistsWithAuth(auth, image, 10*time.Second)
+		imageRef, err := parseImageRef(image)
+		if err != nil {
+			registryInfo.Images[image] = RegistryImage{Error: err.Error()}
+			continue
+		}
+		exists, err := imageExistsWithAuth(auth, imageRef, image, 10*time.Second)
 		if err != nil {
 			registryInfo.Images[image] = RegistryImage{Error: err.Error()}
 		} else {

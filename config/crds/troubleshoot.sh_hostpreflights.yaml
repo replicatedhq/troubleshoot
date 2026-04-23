@@ -855,6 +855,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    registryImages:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     subnetAvailable:
                       properties:
                         annotations:
@@ -1783,6 +1832,27 @@ spec:
                       - fromCIDR
                       - port
                       - toCIDR
+                      type: object
+                    registryImages:
+                      description: |-
+                        HostRegistryImages checks whether images are accessible from the host,
+                        without requiring a Kubernetes cluster. Auth can be supplied inline via
+                        Username/Password or omitted to rely on ambient credentials (e.g. ~/.docker/config.json).
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        images:
+                          items:
+                            type: string
+                          type: array
+                        password:
+                          type: string
+                        username:
+                          type: string
+                      required:
+                      - images
                       type: object
                     run:
                       properties:
