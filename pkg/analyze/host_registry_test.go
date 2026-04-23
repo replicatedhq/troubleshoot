@@ -277,6 +277,68 @@ func TestAnalyzeHostRegistryImages(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "template rendering with missing images list",
+			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "missing > 0",
+							Message: "Missing images: {{ .Missing | join \", \" }}",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == "host-collectors/registry-images/images.json" {
+					return json.Marshal(collect.RegistryInfo{
+						Images: map[string]collect.RegistryImage{
+							"registry.example.com/app:v1": {Exists: false},
+							"registry.example.com/app:v2": {Exists: true},
+						},
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
+				{
+					Title:   "Registry Images",
+					IsFail:  true,
+					Message: "Missing images: registry.example.com/app:v1",
+				},
+			},
+		},
+		{
+			name: "template rendering with counts",
+			hostAnalyzer: &troubleshootv1beta2.HostRegistryImagesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "missing == 0",
+							Message: "All {{ len .Verified }} images are available",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == "host-collectors/registry-images/images.json" {
+					return json.Marshal(collect.RegistryInfo{
+						Images: map[string]collect.RegistryImage{
+							"registry.example.com/app:v1": {Exists: true},
+							"registry.example.com/app:v2": {Exists: true},
+						},
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
+				{
+					Title:   "Registry Images",
+					IsPass:  true,
+					Message: "All 2 images are available",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

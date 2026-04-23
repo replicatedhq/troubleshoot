@@ -156,7 +156,8 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageRef
 			return false, errors.Wrap(err, "failed to get image manifest")
 		}
 
-		if strings.Contains(err.Error(), "no image found in manifest list for architecture") {
+		if strings.Contains(err.Error(), "no image found in manifest list for architecture") ||
+			strings.Contains(err.Error(), "no image found in image index for architecture") {
 			// manifest was downloaded, but no matching architecture found in manifest
 			// should this count as image does not exist?
 			// this binary's architecture is not necessarily what will run in the cluster
