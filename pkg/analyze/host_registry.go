@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
@@ -158,6 +159,9 @@ func buildRegistryImagesSummary(data []byte) (*RegistryImagesSummary, error) {
 			summary.Verified = append(summary.Verified, image)
 		}
 	}
+	slices.Sort(summary.Missing)
+	slices.Sort(summary.Verified)
+	slices.Sort(summary.Errors)
 	return summary, nil
 }
 
