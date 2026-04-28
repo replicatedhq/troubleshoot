@@ -326,7 +326,7 @@ func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
 		TTY:     false,
 	}, scheme.ParameterCodec)
 
-	exec, err := k8sutil.NewFallbackExecutor(c.clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(c.clientConfig, req.URL())
 	if err != nil {
 		return nil, nil, err
 	}

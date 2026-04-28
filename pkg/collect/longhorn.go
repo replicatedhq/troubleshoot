@@ -392,7 +392,7 @@ func GetLonghornReplicaChecksum(clientConfig *rest.Config, replica longhornv1bet
 		Param("command", "-c").
 		Param("command", fmt.Sprintf("if [ -d %s ]; then md5sum %s/*; fi", dir, dir))
 
-	executor, err := k8sutil.NewFallbackExecutor(clientConfig, "POST", req.URL())
+	executor, err := k8sutil.NewFallbackExecutor(clientConfig, req.URL())
 	if err != nil {
 		return "", errors.Wrapf(err, "create remote exec")
 	}

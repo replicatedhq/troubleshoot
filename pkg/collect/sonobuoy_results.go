@@ -148,7 +148,7 @@ func sonobuoyRetrieveResults(
 		Stdout:    true,
 		Stderr:    false,
 	}, scheme.ParameterCodec)
-	executor, err := k8sutil.NewFallbackExecutor(restConfig, "POST", req.URL())
+	executor, err := k8sutil.NewFallbackExecutor(restConfig, req.URL())
 	if err != nil {
 		return nil, ec, err
 	}

@@ -13,7 +13,7 @@ func TestNewFallbackExecutor(t *testing.T) {
 	u, err := url.Parse("http://localhost:8080/api/v1/namespaces/default/pods/foo/exec")
 	require.NoError(t, err)
 
-	exec, err := NewFallbackExecutor(config, "POST", u)
+	exec, err := NewFallbackExecutor(config, u)
 	require.NoError(t, err)
 	require.NotNil(t, exec)
 }

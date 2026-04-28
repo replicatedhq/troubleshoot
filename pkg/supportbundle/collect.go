@@ -368,7 +368,7 @@ func getExecOutputs(
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := k8sutil.NewFallbackExecutor(clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(clientConfig, req.URL())
 	if err != nil {
 		return nil, nil, err
 	}
