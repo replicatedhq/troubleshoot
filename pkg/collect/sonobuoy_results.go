@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -147,7 +148,7 @@ func sonobuoyRetrieveResults(
 		Stdout:    true,
 		Stderr:    false,
 	}, scheme.ParameterCodec)
-	executor, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
+	executor, err := k8sutil.NewFallbackExecutor(restConfig, "POST", req.URL())
 	if err != nil {
 		return nil, ec, err
 	}
