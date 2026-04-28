@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	longhornv1beta1types "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
@@ -391,7 +392,7 @@ func GetLonghornReplicaChecksum(clientConfig *rest.Config, replica longhornv1bet
 		Param("command", "-c").
 		Param("command", fmt.Sprintf("if [ -d %s ]; then md5sum %s/*; fi", dir, dir))
 
-	executor, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
+	executor, err := k8sutil.NewFallbackExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
 		return "", errors.Wrapf(err, "create remote exec")
 	}
