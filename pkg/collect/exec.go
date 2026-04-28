@@ -133,7 +133,7 @@ func getExecOutputs(
 		Command:   append(execCollector.Command, execCollector.Args...),
 		Container: container,
 		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)
