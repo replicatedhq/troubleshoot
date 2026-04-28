@@ -304,7 +304,7 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 		Command:   command,
 		Container: containerName,
 		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)

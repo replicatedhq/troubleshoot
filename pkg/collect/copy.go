@@ -103,7 +103,7 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 		Command:   command,
 		Container: containerName,
 		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)
