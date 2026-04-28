@@ -306,6 +306,13 @@ func isNotFound(err error) bool {
 		return false
 	}
 
+	// containers/image wraps registry errors as plain strings, so the type
+	// switch above won't match. Fall back to a string check for the canonical
+	// "manifest unknown" message before attempting pkg/errors unwrapping.
+	if strings.Contains(err.Error(), registryv2.ErrorCodeManifestUnknown.Message()) {
+		return true
+	}
+
 	cause := errors.Cause(err)
 	if cause, ok := cause.(error); ok {
 		if cause == err {
