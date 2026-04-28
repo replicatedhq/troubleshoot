@@ -19,6 +19,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
@@ -367,7 +368,7 @@ func getExecOutputs(
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, err
 	}
