@@ -11,6 +11,7 @@ import (
 
 	"github.com/distribution/distribution/v3/registry/api/errcode"
 	registryv2 "github.com/distribution/distribution/v3/registry/api/v2"
+	_ "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
