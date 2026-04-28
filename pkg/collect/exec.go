@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -137,7 +138,7 @@ func getExecOutputs(
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
