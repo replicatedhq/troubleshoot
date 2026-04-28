@@ -11,12 +11,12 @@ import (
 // NewFallbackExecutor creates an executor that tries WebSocket first and falls
 // back to SPDY if the server does not support it. Use this in place of
 // remotecommand.NewSPDYExecutor everywhere.
-func NewFallbackExecutor(config *restclient.Config, method string, url *url.URL) (remotecommand.Executor, error) {
-	wsExec, err := remotecommand.NewWebSocketExecutor(config, method, url.String())
+func NewFallbackExecutor(config *restclient.Config, method string, u *url.URL) (remotecommand.Executor, error) {
+	wsExec, err := remotecommand.NewWebSocketExecutor(config, method, u.String())
 	if err != nil {
 		return nil, err
 	}
-	spdyExec, err := remotecommand.NewSPDYExecutor(config, method, url)
+	spdyExec, err := remotecommand.NewSPDYExecutor(config, method, u)
 	if err != nil {
 		return nil, err
 	}
