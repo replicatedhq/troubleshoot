@@ -375,7 +375,7 @@ func TestExtractLicenseID(t *testing.T) {
 			name: "integration-license-id takes priority over config.yaml",
 			data: map[string][]byte{
 				"integration-license-id": []byte("from-integration"),
-				"config.yaml": []byte("license:\n  spec:\n    licenseID: from-config\n"),
+				"config.yaml":            []byte("license:\n  spec:\n    licenseID: from-config\n"),
 			},
 			wantID: "from-integration",
 		},
