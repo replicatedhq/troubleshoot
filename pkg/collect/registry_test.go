@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
-	"go.podman.io/image/v5/transports/alltransports"
 	"k8s.io/client-go/rest"
 )
 
@@ -173,7 +173,7 @@ func TestGetImageAuthConfigFromData(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", test.imageName))
+			imageRef, err := name.ParseReference(test.imageName)
 			assert.NoError(t, err)
 
 			pullSecrets := &v1beta2.ImagePullSecrets{
