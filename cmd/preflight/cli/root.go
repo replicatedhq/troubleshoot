@@ -25,7 +25,13 @@ func RootCmd() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
-that a cluster meets the requirements to run an application.`,
+that a cluster meets the requirements to run an application.
+
+Unlike support-bundle, preflight does not support --load-cluster-specs because
+preflight checks are designed to run before an application is installed or
+upgraded. Since no deployment has occurred yet, there are no in-cluster specs
+to discover. Preflight specs must be provided via a URL, local file path, or
+stdin (e.g. "helm template ... | kubectl preflight -").`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
