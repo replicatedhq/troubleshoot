@@ -1,0 +1,63 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: upload-to-replicated-example
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  afterCollection:
+    # Upload the support bundle to the Replicated vendor portal using
+    # presigned S3 URLs. The license ID, channel ID, and API endpoint are
+    # auto-discovered from the Replicated SDK secret in the cluster.
+    #
+    # The SDK secret is found by its Helm chart label (helm.sh/chart: replicated-*).
+    # Its name follows the convention {APP_NAME}-sdk (e.g., "myapp-sdk").
+    #
+    # RBAC: The service account running the support bundle collector needs
+    # "get" and "list" permissions on secrets in the target namespace.
+    - uploadToReplicated: {}
+
+---
+# Example with explicit overrides (optional):
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: upload-to-replicated-custom
+spec:
+  collectors:
+    - clusterInfo: {}
+  afterCollection:
+    - uploadToReplicated:
+        # Override if the SDK secret has a non-standard name
+        secretName: "myapp-sdk"
+        # Override if the SDK secret is in a different namespace
+        secretNamespace: "app-namespace"
+        # Override the Replicated API endpoint (must be HTTPS)
+        endpoint: "https://replicated.app"
+
+---
+# RBAC required for the support bundle service account:
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: support-bundle-replicated-upload
+  namespace: app-namespace
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: support-bundle-replicated-upload
+  namespace: app-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: support-bundle-replicated-upload
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app-namespace

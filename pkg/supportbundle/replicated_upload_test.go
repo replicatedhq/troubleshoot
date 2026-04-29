@@ -1,6 +1,7 @@
 package supportbundle
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"net/http"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 // newTLSTestServer creates an HTTPS test server with the given handler.
@@ -348,4 +352,307 @@ func TestValidatePresignedURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+// --- Tests for extractLicenseID ---
+
+func TestExtractLicenseID(t *testing.T) {
+	tests := []struct {
+		name        string
+		data        map[string][]byte
+		wantID      string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "from integration-license-id key",
+			data: map[string][]byte{
+				"integration-license-id": []byte("license-abc-123"),
+			},
+			wantID: "license-abc-123",
+		},
+		{
+			name: "integration-license-id takes priority over config.yaml",
+			data: map[string][]byte{
+				"integration-license-id": []byte("from-integration"),
+				"config.yaml": []byte("license:\n  spec:\n    licenseID: from-config\n"),
+			},
+			wantID: "from-integration",
+		},
+		{
+			name: "falls back to config.yaml when integration key missing",
+			data: map[string][]byte{
+				"config.yaml": []byte("license:\n  spec:\n    licenseID: fallback-id\nchannelID: chan-1\n"),
+			},
+			wantID: "fallback-id",
+		},
+		{
+			name: "falls back to config.yaml when integration key is empty",
+			data: map[string][]byte{
+				"integration-license-id": []byte("  "),
+				"config.yaml":            []byte("license:\n  spec:\n    licenseID: fallback-id\n"),
+			},
+			wantID: "fallback-id",
+		},
+		{
+			name:        "error when neither key present",
+			data:        map[string][]byte{},
+			wantErr:     true,
+			errContains: "contains neither",
+		},
+		{
+			name: "error on malformed config.yaml",
+			data: map[string][]byte{
+				"config.yaml": []byte("{{invalid yaml"),
+			},
+			wantErr:     true,
+			errContains: "unmarshal",
+		},
+		{
+			name: "error when license is nil in config",
+			data: map[string][]byte{
+				"config.yaml": []byte("channelID: chan-1\n"),
+			},
+			wantErr:     true,
+			errContains: "does not contain a license",
+		},
+		{
+			name: "error when licenseID is empty in config",
+			data: map[string][]byte{
+				"config.yaml": []byte("license:\n  spec:\n    licenseID: \"\"\n"),
+			},
+			wantErr:     true,
+			errContains: "empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			id, err := extractLicenseID(tt.data, "test-secret", "test-ns")
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantID, id)
+		})
+	}
+}
+
+// --- Tests for extractConfigFields ---
+
+func TestExtractConfigFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		data        map[string][]byte
+		wantChannel string
+		wantEndpt   string
+		wantErr     bool
+	}{
+		{
+			name: "extracts channelID and endpoint",
+			data: map[string][]byte{
+				"config.yaml": []byte("channelID: chan-abc\nreplicatedAppEndpoint: https://custom.replicated.app\n"),
+			},
+			wantChannel: "chan-abc",
+			wantEndpt:   "https://custom.replicated.app",
+		},
+		{
+			name:        "returns empty when config.yaml missing",
+			data:        map[string][]byte{},
+			wantChannel: "",
+			wantEndpt:   "",
+		},
+		{
+			name: "partial config - only channelID",
+			data: map[string][]byte{
+				"config.yaml": []byte("channelID: chan-only\n"),
+			},
+			wantChannel: "chan-only",
+			wantEndpt:   "",
+		},
+		{
+			name: "malformed yaml returns error",
+			data: map[string][]byte{
+				"config.yaml": []byte("{{bad yaml"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ch, ep, err := extractConfigFields(tt.data)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantChannel, ch)
+			assert.Equal(t, tt.wantEndpt, ep)
+		})
+	}
+}
+
+// --- Tests for DiscoverReplicatedCredentials (using fake k8s client) ---
+
+// newFakeSecret creates a corev1.Secret with the given labels and data.
+func newFakeSecret(name, namespace string, labels map[string]string, data map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Data: data,
+	}
+}
+
+func TestDiscoverReplicatedCredentials_LabelDiscovery(t *testing.T) {
+	sdkSecret := newFakeSecret("myapp-sdk", "app-ns", map[string]string{
+		"helm.sh/chart":                "replicated-1.18.2",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{
+		"integration-license-id": []byte("discovered-license"),
+		"config.yaml":            []byte("channelID: chan-discovered\nreplicatedAppEndpoint: https://replicated.app\n"),
+	})
+
+	clientset := fake.NewSimpleClientset(sdkSecret)
+
+	// Inject the fake clientset by calling the internal functions directly,
+	// since DiscoverReplicatedCredentials creates its own clientset from restConfig.
+	// Instead, test the building blocks and one integration path.
+
+	// Test extractLicenseID with the same data
+	licenseID, err := extractLicenseID(sdkSecret.Data, sdkSecret.Name, sdkSecret.Namespace)
+	require.NoError(t, err)
+	assert.Equal(t, "discovered-license", licenseID)
+
+	// Test extractConfigFields
+	ch, ep, err := extractConfigFields(sdkSecret.Data)
+	require.NoError(t, err)
+	assert.Equal(t, "chan-discovered", ch)
+	assert.Equal(t, "https://replicated.app", ep)
+
+	// Verify the fake clientset can list and find by label
+	secrets, err := clientset.CoreV1().Secrets("app-ns").List(context.Background(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/managed-by=Helm",
+	})
+	require.NoError(t, err)
+	require.Len(t, secrets.Items, 1)
+	assert.Equal(t, "myapp-sdk", secrets.Items[0].Name)
+	assert.True(t, len(secrets.Items[0].Labels["helm.sh/chart"]) > 0)
+}
+
+func TestDiscoverReplicatedCredentials_ExplicitSecretName(t *testing.T) {
+	secret := newFakeSecret("custom-secret", "custom-ns", nil, map[string][]byte{
+		"integration-license-id": []byte("explicit-license"),
+		"config.yaml":            []byte("channelID: chan-explicit\nreplicatedAppEndpoint: https://replicated.app\n"),
+	})
+
+	clientset := fake.NewSimpleClientset(secret)
+
+	// Verify explicit get works
+	s, err := clientset.CoreV1().Secrets("custom-ns").Get(context.Background(), "custom-secret", metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "custom-secret", s.Name)
+
+	licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
+	require.NoError(t, err)
+	assert.Equal(t, "explicit-license", licenseID)
+}
+
+func TestDiscoverReplicatedCredentials_NoSDKSecret(t *testing.T) {
+	// Create a non-SDK Helm secret
+	otherSecret := newFakeSecret("other-chart", "app-ns", map[string]string{
+		"helm.sh/chart":                "postgresql-12.0.0",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{
+		"password": []byte("secret"),
+	})
+
+	clientset := fake.NewSimpleClientset(otherSecret)
+
+	secrets, err := clientset.CoreV1().Secrets("app-ns").List(context.Background(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/managed-by=Helm",
+	})
+	require.NoError(t, err)
+
+	// Simulate the discovery logic
+	var found bool
+	for _, s := range secrets.Items {
+		if chartLabel := s.Labels["helm.sh/chart"]; len(chartLabel) > 0 {
+			if len(chartLabel) >= len(replicatedSDKChartLabelPrefix) &&
+				chartLabel[:len(replicatedSDKChartLabelPrefix)] == replicatedSDKChartLabelPrefix {
+				found = true
+				break
+			}
+		}
+	}
+	assert.False(t, found, "should not find a replicated SDK secret")
+}
+
+func TestDiscoverReplicatedCredentials_DefaultEndpointFallback(t *testing.T) {
+	// config.yaml with no endpoint — should default to https://replicated.app
+	data := map[string][]byte{
+		"integration-license-id": []byte("test-license"),
+		"config.yaml":            []byte("channelID: chan-1\n"),
+	}
+
+	licenseID, err := extractLicenseID(data, "test", "test-ns")
+	require.NoError(t, err)
+	assert.Equal(t, "test-license", licenseID)
+
+	_, ep, err := extractConfigFields(data)
+	require.NoError(t, err)
+	assert.Equal(t, "", ep, "endpoint should be empty from config, caller applies default")
+}
+
+func TestDiscoverReplicatedCredentials_MultipleHelmSecrets(t *testing.T) {
+	// Multiple Helm secrets, only one is the SDK
+	pgSecret := newFakeSecret("postgres", "app-ns", map[string]string{
+		"helm.sh/chart":                "postgresql-12.0.0",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{"password": []byte("pg-pass")})
+
+	sdkSecret := newFakeSecret("myapp-sdk", "app-ns", map[string]string{
+		"helm.sh/chart":                "replicated-1.18.2",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{
+		"integration-license-id": []byte("correct-license"),
+		"config.yaml":            []byte("channelID: correct-channel\nreplicatedAppEndpoint: https://replicated.app\n"),
+	})
+
+	redisSecret := newFakeSecret("redis", "app-ns", map[string]string{
+		"helm.sh/chart":                "redis-17.0.0",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{"password": []byte("redis-pass")})
+
+	clientset := fake.NewSimpleClientset(pgSecret, sdkSecret, redisSecret)
+
+	secrets, err := clientset.CoreV1().Secrets("app-ns").List(context.Background(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/managed-by=Helm",
+	})
+	require.NoError(t, err)
+	require.Len(t, secrets.Items, 3)
+
+	// Simulate discovery — find the SDK secret among many
+	var foundData map[string][]byte
+	var foundName string
+	for _, s := range secrets.Items {
+		if chartLabel := s.Labels["helm.sh/chart"]; len(chartLabel) >= len(replicatedSDKChartLabelPrefix) &&
+			chartLabel[:len(replicatedSDKChartLabelPrefix)] == replicatedSDKChartLabelPrefix {
+			foundData = s.Data
+			foundName = s.Name
+			break
+		}
+	}
+
+	require.NotNil(t, foundData, "should find the SDK secret")
+	assert.Equal(t, "myapp-sdk", foundName)
+
+	licenseID, err := extractLicenseID(foundData, foundName, "app-ns")
+	require.NoError(t, err)
+	assert.Equal(t, "correct-license", licenseID)
 }

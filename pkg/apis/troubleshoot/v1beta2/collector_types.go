@@ -35,16 +35,28 @@ type AfterCollection struct {
 // UploadToReplicatedSpec configures uploading support bundles to the Replicated
 // vendor portal via the presigned S3 URL flow. The license ID, channel ID, and
 // endpoint are auto-discovered from the in-cluster Replicated SDK secret.
+//
+// The SDK secret is discovered by its Helm chart label (helm.sh/chart: replicated-*).
+// Its name follows the convention {APP_NAME}-sdk (e.g., "myapp-sdk").
+//
+// Upload flow:
+//  1. Get a presigned S3 URL from POST /v3/supportbundle/upload-url
+//  2. PUT the bundle archive directly to S3
+//  3. Notify the API via POST /v3/supportbundle/{bundleID}/uploaded
+//
+// RBAC: The service account needs "get" and "list" on secrets in the target namespace.
+// See examples/support-bundle/upload-to-replicated.yaml for a complete example.
 type UploadToReplicatedSpec struct {
-	// SecretName overrides the default name ("replicated") of the SDK secret.
+	// SecretName overrides the auto-discovered SDK secret name.
+	// By default, the secret is found by its helm.sh/chart label.
 	// +optional
 	SecretName string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
 	// SecretNamespace overrides the namespace to look for the SDK secret.
 	// Defaults to the namespace troubleshoot is running in.
 	// +optional
 	SecretNamespace string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
-	// Endpoint overrides the Replicated API endpoint. Defaults to the value
-	// from the SDK secret, or https://replicated.app.
+	// Endpoint overrides the Replicated API endpoint. Must use HTTPS.
+	// Defaults to the value from the SDK secret, or https://replicated.app.
 	// +optional
 	Endpoint string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 }
