@@ -110,7 +110,7 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 	} else {
 		// Discover the SDK secret by label
 		secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/managed-by=Helm",
+			LabelSelector: "helm.sh/chart",
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "list secrets in namespace %s", namespace)
@@ -178,8 +178,10 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 		return nil, errors.Wrap(err, "create kubernetes clientset")
 	}
 
+	// Use helm.sh/chart label (confirmed present on SDK secrets) rather than
+	// app.kubernetes.io/managed-by which may not be on all secrets.
 	secrets, err := clientset.CoreV1().Secrets("").List(ctx, metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/managed-by=Helm",
+		LabelSelector: "helm.sh/chart",
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "list secrets across all namespaces")
@@ -194,11 +196,13 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 
 		licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
 		channelID, endpoint, err := extractConfigFields(s.Data)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
@@ -207,6 +211,7 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 		}
 
 		if err := validateEndpoint(endpoint); err != nil {
+			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
