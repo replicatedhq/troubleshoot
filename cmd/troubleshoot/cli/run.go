@@ -533,6 +533,12 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 		return creds, nil
 	}
 
+	// If multiple SDK secrets were found in the same namespace, prompt to select
+	var multiErr *supportbundle.MultipleSDKSecretsError
+	if errors.As(err, &multiErr) {
+		return promptForSDKSecret(multiErr.Matches)
+	}
+
 	// Fallback: search all namespaces
 	fmt.Fprintf(os.Stderr, "SDK secret not found in namespace %q, searching all namespaces...\n", ns)
 	matches, searchErr := supportbundle.FindAllSDKCredentials(ctx, restConfig)

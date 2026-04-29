@@ -108,36 +108,30 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 		secretData = secret.Data
 		resolvedName = secretName
 	} else {
-		// Discover the SDK secret by label
-		secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: "helm.sh/chart",
-		})
+		// Discover SDK secrets by label in the target namespace
+		matches, err := findSDKSecretsInNamespace(clientset, ctx, namespace)
 		if err != nil {
-			return nil, errors.Wrapf(err, "list secrets in namespace %s", namespace)
+			return nil, err
 		}
 
-		for _, s := range secrets.Items {
-			chartLabel := s.Labels["helm.sh/chart"]
-			if strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
-				secretData = s.Data
-				resolvedName = s.Name
-				break
-			}
-		}
-
-		if secretData == nil {
+		switch len(matches) {
+		case 0:
 			return nil, fmt.Errorf("no Replicated SDK secret found in namespace %q (looked for helm.sh/chart label with prefix %q). "+
 				"If the SDK is installed in a different namespace, use --sdk-namespace to specify it", namespace, replicatedSDKChartLabelPrefix)
+		case 1:
+			return matches[0].Creds, nil
+		default:
+			// Multiple apps in the same namespace — caller must prompt/select
+			return nil, &MultipleSDKSecretsError{Matches: matches}
 		}
 	}
 
-	// Extract license ID: try integration-license-id key first, fall back to config.yaml
+	// Explicit secret name path: extract credentials directly
 	licenseID, err := extractLicenseID(secretData, resolvedName, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	// Extract channel ID and endpoint from config.yaml
 	channelID, endpoint, err := extractConfigFields(secretData)
 	if err != nil {
 		return nil, err
@@ -158,12 +152,71 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 	}, nil
 }
 
+// MultipleSDKSecretsError is returned when multiple SDK secrets are found and
+// the caller must prompt/select. It carries the matches so the caller can
+// present them to the user.
+type MultipleSDKSecretsError struct {
+	Matches []SDKSecretMatch
+}
+
+func (e *MultipleSDKSecretsError) Error() string {
+	return fmt.Sprintf("found %d Replicated SDK secrets; use --sdk-namespace to select one", len(e.Matches))
+}
+
 // SDKSecretMatch represents a discovered Replicated SDK secret with its
 // resolved credentials and location metadata for display purposes.
 type SDKSecretMatch struct {
 	SecretName string
 	Namespace  string
 	Creds      *ReplicatedUploadCredentials
+}
+
+// findSDKSecretsInNamespace finds all valid SDK secrets in a single namespace.
+func findSDKSecretsInNamespace(clientset kubernetes.Interface, ctx context.Context, namespace string) ([]SDKSecretMatch, error) {
+	secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "helm.sh/chart",
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "list secrets in namespace %s", namespace)
+	}
+
+	var matches []SDKSecretMatch
+	for _, s := range secrets.Items {
+		chartLabel := s.Labels["helm.sh/chart"]
+		if !strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
+			continue
+		}
+
+		licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
+		if err != nil {
+			continue
+		}
+
+		channelID, endpoint, err := extractConfigFields(s.Data)
+		if err != nil {
+			continue
+		}
+
+		if endpoint == "" {
+			endpoint = defaultReplicatedAppEndpoint
+		}
+
+		if err := validateEndpoint(endpoint); err != nil {
+			continue
+		}
+
+		matches = append(matches, SDKSecretMatch{
+			SecretName: s.Name,
+			Namespace:  s.Namespace,
+			Creds: &ReplicatedUploadCredentials{
+				LicenseID: licenseID,
+				ChannelID: channelID,
+				Endpoint:  strings.TrimRight(endpoint, "/"),
+			},
+		})
+	}
+
+	return matches, nil
 }
 
 // FindAllSDKCredentials searches all namespaces for Replicated SDK secrets

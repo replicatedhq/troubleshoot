@@ -57,8 +57,10 @@ spec:
 #      a. Search --sdk-namespace if provided
 #      b. Otherwise search --namespace (or "default")
 #      c. Fall back to searching ALL namespaces
-#   3. If multiple SDK secrets are found, prompt to select (interactive)
-#      or list them and suggest --sdk-namespace (non-interactive)
+#   3. If multiple SDK secrets are found (multiple apps in the same
+#      namespace, or across namespaces), prompt the user to select
+#      which app to upload for (interactive terminal) or list them
+#      and suggest --sdk-namespace (CI/non-interactive)
 #   4. If none found, show hints for --sdk-namespace or --license-id
 #
 # Upload errors are non-fatal: they are logged to stderr but never

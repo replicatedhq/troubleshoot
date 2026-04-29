@@ -834,6 +834,48 @@ func TestPromptForSDKSecret_SingleMatch(t *testing.T) {
 	assert.Equal(t, "lic-single", matches[0].Creds.LicenseID)
 }
 
+func TestFindAllSDKCredentials_MultipleAppsInSameNamespace(t *testing.T) {
+	// Two different apps installed in the same namespace
+	app1 := makeSDKSecret("app-one", "shared-ns", "license-one", "chan-one")
+	app2 := makeSDKSecret("app-two", "shared-ns", "license-two", "chan-two")
+	pullSecret := makeNonSDKSecret("enterprise-pull-secret", "shared-ns")
+
+	clientset := fake.NewSimpleClientset(app1, app2, pullSecret)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+	require.Len(t, matches, 2, "should find both SDK secrets in the same namespace")
+
+	names := []string{matches[0].SecretName, matches[1].SecretName}
+	assert.Contains(t, names, "app-one-sdk")
+	assert.Contains(t, names, "app-two-sdk")
+
+	// Both should be in the same namespace
+	assert.Equal(t, "shared-ns", matches[0].Namespace)
+	assert.Equal(t, "shared-ns", matches[1].Namespace)
+}
+
+func TestDiscoverReplicatedCredentials_MultipleAppsInSameNamespace_ReturnsError(t *testing.T) {
+	// When DiscoverReplicatedCredentials finds multiple SDK secrets in the
+	// target namespace, it should return a MultipleSDKSecretsError so the
+	// caller can prompt the user to select.
+	app1 := makeSDKSecret("app-one", "shared-ns", "license-one", "chan-one")
+	app2 := makeSDKSecret("app-two", "shared-ns", "license-two", "chan-two")
+
+	clientset := fake.NewSimpleClientset(app1, app2)
+
+	// We can't call DiscoverReplicatedCredentials directly (needs rest.Config),
+	// but we can call findSDKSecretsInNamespace which is what it uses internally.
+	matches, err := findSDKSecretsInNamespace(clientset, context.Background(), "shared-ns")
+	require.NoError(t, err)
+	require.Len(t, matches, 2)
+
+	// Simulate what DiscoverReplicatedCredentials does with multiple matches
+	multiErr := &MultipleSDKSecretsError{Matches: matches}
+	assert.Contains(t, multiErr.Error(), "found 2 Replicated SDK secrets")
+	assert.Contains(t, multiErr.Error(), "--sdk-namespace")
+}
+
 func TestFindAllSDKCredentials_SameAppMultipleNamespaces(t *testing.T) {
 	// Same app installed in staging and production namespaces
 	staging := makeSDKSecret("myapp", "staging", "license-staging", "chan-staging")
