@@ -161,7 +161,7 @@ type MultipleSDKSecretsError struct {
 }
 
 func (e *MultipleSDKSecretsError) Error() string {
-	return fmt.Sprintf("found %d Replicated SDK secrets; use --app-slug or --sdk-namespace to select one", len(e.Matches))
+	return fmt.Sprintf("found %d Replicated SDK secrets; use --app-slug / --sdk-namespace on the CLI, or set secretName/secretNamespace in the spec", len(e.Matches))
 }
 
 // SDKSecretMatch represents a discovered Replicated SDK secret with its
@@ -523,7 +523,7 @@ func PromptForSDKSecret(matches []SDKSecretMatch) (*ReplicatedUploadCredentials,
 			fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
 		}
 	}
-	return nil, fmt.Errorf("multiple SDK secrets found; use --app-slug=<slug> or --sdk-namespace=<namespace> to select one")
+	return nil, fmt.Errorf("multiple SDK secrets found; use --app-slug=<slug> or --sdk-namespace=<namespace> on the CLI, or set secretName/secretNamespace in the spec")
 }
 
 func setBasicAuth(req *http.Request, licenseID string) {

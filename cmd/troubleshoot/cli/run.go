@@ -278,7 +278,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			// Discovery errors are non-fatal — we log them to stderr and move on.
 			if restConfig != nil {
 				sdkNamespace := v.GetString("sdk-namespace")
-				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug)
+				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug, interactive)
 				if credErr != nil {
 					fmt.Fprintf(os.Stderr, "SDK credential discovery: %v\n", credErr)
 				} else {
@@ -524,13 +524,13 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 //  4. If multiple found, filter by appSlug or prompt the user.
 //
 // All failures are returned as errors but should be treated as non-fatal by callers.
-func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace, appSlug string) (*supportbundle.ReplicatedUploadCredentials, error) {
+func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace, appSlug string, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
 	if sdkNamespace != "" {
 		creds, err := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
 		if err != nil {
 			var multiErr *supportbundle.MultipleSDKSecretsError
 			if errors.As(err, &multiErr) {
-				return resolveMultipleMatches(multiErr.Matches, appSlug)
+				return resolveMultipleMatches(multiErr.Matches, appSlug, interactive)
 			}
 		}
 		return creds, err
@@ -549,7 +549,7 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 	// If multiple SDK secrets were found in the same namespace, try app-slug filter
 	var multiErr *supportbundle.MultipleSDKSecretsError
 	if errors.As(err, &multiErr) {
-		return resolveMultipleMatches(multiErr.Matches, appSlug)
+		return resolveMultipleMatches(multiErr.Matches, appSlug, interactive)
 	}
 
 	// Fallback: search all namespaces
@@ -568,14 +568,14 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 		fmt.Fprintf(os.Stderr, "Found SDK secret %s/%s\n", m.Namespace, m.SecretName)
 		return m.Creds, nil
 	default:
-		return resolveMultipleMatches(matches, appSlug)
+		return resolveMultipleMatches(matches, appSlug, interactive)
 	}
 }
 
 // resolveMultipleMatches handles the case where multiple SDK secrets are found.
 // If appSlug is provided, filter to the matching one. Otherwise prompt (interactive)
 // or error with hints (non-interactive).
-func resolveMultipleMatches(matches []supportbundle.SDKSecretMatch, appSlug string) (*supportbundle.ReplicatedUploadCredentials, error) {
+func resolveMultipleMatches(matches []supportbundle.SDKSecretMatch, appSlug string, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
 	if appSlug != "" {
 		if m := supportbundle.FilterByAppSlug(matches, appSlug); m != nil {
 			fmt.Fprintf(os.Stderr, "Using SDK secret %s/%s (app: %s)\n", m.Namespace, m.SecretName, m.AppSlug)
@@ -583,13 +583,13 @@ func resolveMultipleMatches(matches []supportbundle.SDKSecretMatch, appSlug stri
 		}
 		return nil, fmt.Errorf("no SDK secret found matching --app-slug=%q", appSlug)
 	}
-	return promptForSDKSecret(matches)
+	return promptForSDKSecret(matches, interactive)
 }
 
 // promptForSDKSecret presents the user with a list of discovered SDK secrets
 // and returns the credentials for the one they select.
-func promptForSDKSecret(matches []supportbundle.SDKSecretMatch) (*supportbundle.ReplicatedUploadCredentials, error) {
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
+func promptForSDKSecret(matches []supportbundle.SDKSecretMatch, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if !interactive || !isatty.IsTerminal(os.Stdin.Fd()) {
 		return supportbundle.PromptForSDKSecret(matches)
 	}
 
