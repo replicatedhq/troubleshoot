@@ -446,6 +446,9 @@ func uploadToReplicated(spec *troubleshootv1beta2.UploadToReplicatedSpec, archiv
 	if spec.SecretNamespace != "" {
 		secretNamespace = spec.SecretNamespace
 	}
+	if secretNamespace == "" {
+		secretNamespace = "default"
+	}
 
 	creds, err := DiscoverReplicatedCredentials(ctx, restConfig, secretNamespace, spec.SecretName)
 	if err != nil {

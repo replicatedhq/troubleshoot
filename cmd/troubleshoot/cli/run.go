@@ -279,10 +279,14 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			if restConfig != nil {
 				sdkNamespace := v.GetString("sdk-namespace")
 				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug)
-				if credErr == nil {
+				if credErr != nil {
+					fmt.Fprintf(os.Stderr, "SDK credential discovery: %v\n", credErr)
+				} else {
 					fmt.Fprintf(os.Stderr, "Uploading via Replicated SDK presigned URL...\n")
 					slug, uploadErr := supportbundle.UploadSupportBundleToReplicated(creds, response.ArchivePath)
-					if uploadErr == nil {
+					if uploadErr != nil {
+						fmt.Fprintf(os.Stderr, "Presigned URL upload failed: %v\n", uploadErr)
+					} else {
 						fmt.Fprintf(os.Stderr, "Support bundle uploaded to Replicated (slug: %s)\n", slug)
 						response.FileUploaded = true
 					}
