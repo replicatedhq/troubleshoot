@@ -196,13 +196,11 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 
 		licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
 		channelID, endpoint, err := extractConfigFields(s.Data)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
@@ -211,7 +209,6 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 		}
 
 		if err := validateEndpoint(endpoint); err != nil {
-			fmt.Fprintf(os.Stderr, "  skipping %s/%s: %v\n", s.Namespace, s.Name, err)
 			continue
 		}
 
