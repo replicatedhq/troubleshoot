@@ -91,9 +91,9 @@ func (c *CollectRegistry) Collect(progressChan chan<- interface{}) (CollectorRes
 }
 
 func imageExists(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, image string, deadline time.Duration) (bool, error) {
-	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
+	imageRef, err := parseImageRef(image)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to parse image name %s", image)
+		return false, err
 	}
 
 	authConfig, err := getImageAuthConfig(namespace, clientConfig, registryCollector, imageRef)
@@ -102,6 +102,21 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
 
+	return imageExistsWithAuth(authConfig, imageRef, image, deadline)
+}
+
+func parseImageRef(image string) (types.ImageReference, error) {
+	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse image name %s", image)
+	}
+	return imageRef, nil
+}
+
+// imageExistsWithAuth checks if an image exists in a registry using optional auth credentials.
+// authConfig may be nil for ambient credentials (e.g. ~/.docker/config.json).
+// This is the shared core used by both the cluster-level and host-level registry collectors.
+func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageReference, image string, deadline time.Duration) (bool, error) {
 	sysCtx := types.SystemContext{
 		DockerDisableV1Ping:         true,
 		DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
@@ -141,7 +156,8 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 			return false, errors.Wrap(err, "failed to get image manifest")
 		}
 
-		if strings.Contains(err.Error(), "no image found in manifest list for architecture") {
+		if strings.Contains(err.Error(), "no image found in manifest list for architecture") ||
+			strings.Contains(err.Error(), "no image found in image index for architecture") {
 			// manifest was downloaded, but no matching architecture found in manifest
 			// should this count as image does not exist?
 			// this binary's architecture is not necessarily what will run in the cluster
