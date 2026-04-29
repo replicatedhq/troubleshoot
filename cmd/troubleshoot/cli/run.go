@@ -537,6 +537,7 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 	fmt.Fprintf(os.Stderr, "SDK secret not found in namespace %q, searching all namespaces...\n", ns)
 	matches, searchErr := supportbundle.FindAllSDKCredentials(ctx, restConfig)
 	if searchErr != nil {
+		fmt.Fprintf(os.Stderr, "Could not search all namespaces (may need cluster-wide RBAC): %v\n", searchErr)
 		return nil, searchErr
 	}
 

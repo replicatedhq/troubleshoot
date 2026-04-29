@@ -34,21 +34,20 @@ const (
 	maxErrorResponseBytes = 1024 * 1024 // 1 MB
 )
 
-// ReplicatedConfig represents the config.yaml stored in the replicated Secret.
+// ReplicatedConfig represents the config.yaml stored in the SDK secret.
+// The license field can be either a YAML map (nested object) or a YAML string,
+// so we use interface{} and re-marshal to extract the license ID.
 type ReplicatedConfig struct {
-	License               *ReplicatedLicense `json:"license" yaml:"license"`
-	ChannelID             string             `json:"channelID" yaml:"channelID"`
-	ReplicatedAppEndpoint string             `json:"replicatedAppEndpoint" yaml:"replicatedAppEndpoint"`
+	License               interface{} `json:"license" yaml:"license"`
+	ChannelID             string      `json:"channelID" yaml:"channelID"`
+	ReplicatedAppEndpoint string      `json:"replicatedAppEndpoint" yaml:"replicatedAppEndpoint"`
 }
 
-// ReplicatedLicense contains the license wrapper with the ID we need for auth.
-type ReplicatedLicense struct {
-	Spec ReplicatedLicenseSpec `json:"spec" yaml:"spec"`
-}
-
-// ReplicatedLicenseSpec contains license details including the ID.
-type ReplicatedLicenseSpec struct {
-	LicenseID string `json:"licenseID" yaml:"licenseID"`
+// replicatedLicenseSpec is the inner structure containing the license ID.
+type replicatedLicenseSpec struct {
+	Spec struct {
+		LicenseID string `json:"licenseID" yaml:"licenseID"`
+	} `json:"spec" yaml:"spec"`
 }
 
 // ReplicatedUploadCredentials holds the values discovered from the in-cluster SDK secret.
@@ -252,7 +251,19 @@ func extractLicenseID(data map[string][]byte, secretName, namespace string) (str
 		return "", fmt.Errorf("replicated config in secret %s/%s does not contain a license", namespace, secretName)
 	}
 
-	licenseID := config.License.Spec.LicenseID
+	// The license field may be a YAML map or string. Re-marshal to YAML bytes
+	// and parse into our spec struct to extract the license ID.
+	licenseBytes, err := yaml.Marshal(config.License)
+	if err != nil {
+		return "", errors.Wrapf(err, "marshal license field in secret %s/%s", namespace, secretName)
+	}
+
+	var spec replicatedLicenseSpec
+	if err := yaml.Unmarshal(licenseBytes, &spec); err != nil {
+		return "", errors.Wrapf(err, "unmarshal license spec in secret %s/%s", namespace, secretName)
+	}
+
+	licenseID := spec.Spec.LicenseID
 	if licenseID == "" {
 		return "", fmt.Errorf("license ID is empty in secret %s/%s", namespace, secretName)
 	}
