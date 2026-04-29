@@ -304,14 +304,14 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 		Command:   command,
 		Container: containerName,
 		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(clientConfig, req.URL())
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create SPDY executor")
+		return nil, nil, errors.Wrap(err, "failed to create executor")
 	}
 
 	result := NewResult()

@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -325,7 +326,7 @@ func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
 		TTY:     false,
 	}, scheme.ParameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(c.clientConfig, "POST", req.URL())
+	exec, err := k8sutil.NewFallbackExecutor(c.clientConfig, req.URL())
 	if err != nil {
 		return nil, nil, err
 	}
