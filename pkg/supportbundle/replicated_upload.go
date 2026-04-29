@@ -256,11 +256,25 @@ func extractLicenseID(data map[string][]byte, secretName, namespace string) (str
 		return "", fmt.Errorf("replicated config in secret %s/%s does not contain a license", namespace, secretName)
 	}
 
-	// The license field may be a YAML map or string. Re-marshal to YAML bytes
-	// and parse into our spec struct to extract the license ID.
-	licenseBytes, err := yaml.Marshal(config.License)
-	if err != nil {
-		return "", errors.Wrapf(err, "marshal license field in secret %s/%s", namespace, secretName)
+	// The license field may be a YAML string or a YAML map, depending on how
+	// the Helm template rendered it. Handle both cases.
+	var licenseBytes []byte
+	switch v := config.License.(type) {
+	case string:
+		// The Helm template's {{- whitespace trimming can collapse the license
+		// into a string value. Parse the string directly as YAML.
+		licenseBytes = []byte(v)
+	default:
+		// It's a map or other YAML type — re-marshal to YAML bytes.
+		var err error
+		licenseBytes, err = yaml.Marshal(v)
+		if err != nil {
+			return "", errors.Wrapf(err, "marshal license field in secret %s/%s", namespace, secretName)
+		}
+	}
+
+	if len(licenseBytes) == 0 {
+		return "", fmt.Errorf("license field is empty in secret %s/%s", namespace, secretName)
 	}
 
 	var spec replicatedLicenseSpec

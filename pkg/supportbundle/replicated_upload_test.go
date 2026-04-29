@@ -424,6 +424,20 @@ func TestExtractLicenseID(t *testing.T) {
 			wantErr:     true,
 			errContains: "empty",
 		},
+		{
+			name: "license as string (Helm template {{- whitespace trimming)",
+			data: map[string][]byte{
+				"config.yaml": []byte("license: |\n  apiVersion: kots.io/v1beta1\n  kind: License\n  spec:\n    licenseID: string-license-abc\n    appSlug: myapp\nchannelID: chan-1\n"),
+			},
+			wantID: "string-license-abc",
+		},
+		{
+			name: "license as inline string",
+			data: map[string][]byte{
+				"config.yaml": []byte("license: \"apiVersion: kots.io/v1beta1\\nkind: License\\nspec:\\n  licenseID: inline-id-123\"\nchannelID: chan-2\n"),
+			},
+			wantID: "inline-id-123",
+		},
 	}
 
 	for _, tt := range tests {
