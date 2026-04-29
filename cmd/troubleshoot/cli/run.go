@@ -16,6 +16,7 @@ import (
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
@@ -273,26 +274,25 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to %s...\n", targetDomain)
 		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug, uploadDomain); err != nil {
-			// Fallback: try the presigned URL flow using in-cluster SDK credentials
+			// Fallback: try the presigned URL flow using in-cluster SDK credentials.
+			// Discovery errors are non-fatal — we log them to stderr and move on.
 			if restConfig != nil {
 				sdkNamespace := v.GetString("sdk-namespace")
 				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"))
 				if credErr == nil {
-					fmt.Fprintf(os.Stderr, "Trying presigned URL upload via SDK credentials...\n")
+					fmt.Fprintf(os.Stderr, "Uploading via Replicated SDK presigned URL...\n")
 					slug, uploadErr := supportbundle.UploadSupportBundleToReplicated(creds, response.ArchivePath)
 					if uploadErr == nil {
 						fmt.Fprintf(os.Stderr, "Support bundle uploaded to Replicated (slug: %s)\n", slug)
 						response.FileUploaded = true
-					} else {
-						fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", uploadErr)
 					}
 				}
 			}
 
 			if !response.FileUploaded {
-				fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Auto-upload: could not upload bundle automatically.\n")
 				fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
-				fmt.Fprintf(os.Stderr, "Hint: if the Replicated SDK is in a different namespace, try --sdk-namespace=<namespace>\n")
+				fmt.Fprintf(os.Stderr, "Hint: try --sdk-namespace=<namespace> or --license-id=<id> --app-slug=<slug>\n")
 			}
 		} else {
 			response.FileUploaded = true
@@ -514,7 +514,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 // Strategy:
 //  1. If sdkNamespace is explicitly provided, search only that namespace.
 //  2. Otherwise, try the collector namespace first.
-//  3. If not found, search across all namespaces as a final fallback.
+//  3. If not found, search all namespaces. If multiple are found, prompt the user.
+//
+// All failures are returned as errors but should be treated as non-fatal by callers
+// (print to stderr, don't fail the bundle).
 func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace string) (*supportbundle.ReplicatedUploadCredentials, error) {
 	if sdkNamespace != "" {
 		return supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
@@ -532,7 +535,54 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 
 	// Fallback: search all namespaces
 	fmt.Fprintf(os.Stderr, "SDK secret not found in namespace %q, searching all namespaces...\n", ns)
-	return supportbundle.DiscoverReplicatedCredentialsAcrossNamespaces(ctx, restConfig)
+	matches, searchErr := supportbundle.FindAllSDKCredentials(ctx, restConfig)
+	if searchErr != nil {
+		return nil, searchErr
+	}
+
+	switch len(matches) {
+	case 0:
+		return nil, fmt.Errorf("no Replicated SDK secret found in any namespace")
+	case 1:
+		m := matches[0]
+		fmt.Fprintf(os.Stderr, "Found SDK secret %s/%s\n", m.Namespace, m.SecretName)
+		return m.Creds, nil
+	default:
+		return promptForSDKSecret(matches)
+	}
+}
+
+// promptForSDKSecret presents the user with a list of discovered SDK secrets
+// and returns the credentials for the one they select.
+func promptForSDKSecret(matches []supportbundle.SDKSecretMatch) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if !isatty.IsTerminal(os.Stderr.Fd()) {
+		// Non-interactive: list what was found and ask for --sdk-namespace
+		fmt.Fprintf(os.Stderr, "Found %d Replicated SDK secrets:\n", len(matches))
+		for _, m := range matches {
+			fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
+		}
+		return nil, fmt.Errorf("multiple SDK secrets found; use --sdk-namespace to select one")
+	}
+
+	items := make([]string, len(matches))
+	for i, m := range matches {
+		items[i] = fmt.Sprintf("%s/%s", m.Namespace, m.SecretName)
+	}
+
+	prompt := promptui.Select{
+		Label:  "Multiple Replicated SDK secrets found. Select one",
+		Items:  items,
+		Stdout: os.Stderr,
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("selection cancelled")
+	}
+
+	selected := matches[idx]
+	fmt.Fprintf(os.Stderr, "Using SDK secret %s/%s\n", selected.Namespace, selected.SecretName)
+	return selected.Creds, nil
 }
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {

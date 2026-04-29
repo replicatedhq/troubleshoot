@@ -52,7 +52,12 @@ spec:
 #   1. Try extracting license from inside the bundle archive
 #   2. Try the Replicated SDK secret in the collector namespace (or --sdk-namespace)
 #   3. Search all namespaces for the SDK secret as a final fallback
-#   4. If all fail, suggest --sdk-namespace or --license-id
+#   4. If multiple SDK secrets are found, prompt to select one (interactive)
+#      or list them with a hint to use --sdk-namespace (non-interactive)
+#   5. If none found, suggest --sdk-namespace or --license-id
+#
+# Discovery errors are non-fatal: they are logged to stderr but never
+# affect the support bundle collection or its contents.
 
 ---
 # RBAC required for the support bundle service account:
