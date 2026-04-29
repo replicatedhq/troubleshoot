@@ -72,6 +72,16 @@ func TestGetPresignedUploadURL(t *testing.T) {
 			wantErr:      true,
 			errContains:  "did not contain an upload URL",
 		},
+		{
+			name: "empty bundle ID",
+			serverResponse: supportBundleUploadURLResponse{
+				BundleID:  "",
+				UploadURL: "https://s3.amazonaws.com/presigned-url",
+			},
+			serverStatus: http.StatusOK,
+			wantErr:      true,
+			errContains:  "did not contain a bundle ID",
+		},
 	}
 
 	for _, tt := range tests {

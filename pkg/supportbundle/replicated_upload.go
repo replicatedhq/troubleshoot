@@ -382,6 +382,10 @@ func GetPresignedUploadURL(creds *ReplicatedUploadCredentials) (*supportBundleUp
 		return nil, fmt.Errorf("presigned URL response did not contain an upload URL")
 	}
 
+	if uploadURLResp.BundleID == "" {
+		return nil, fmt.Errorf("presigned URL response did not contain a bundle ID")
+	}
+
 	if err := validatePresignedURL(uploadURLResp.UploadURL); err != nil {
 		return nil, errors.Wrap(err, "invalid presigned upload URL")
 	}
