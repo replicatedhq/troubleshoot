@@ -795,7 +795,10 @@ func TestFindAllSDKCredentials_SkipsSecretsWithoutLicense(t *testing.T) {
 }
 
 func TestPromptForSDKSecret_NonInteractive(t *testing.T) {
-	// In test (non-TTY), promptForSDKSecret should return an error listing all matches
+	// When stdin is not a TTY (CI, piped input), the CLI cannot show an
+	// interactive prompt. In this case PromptForSDKSecret lists all found
+	// secrets and returns an error suggesting --sdk-namespace. When a TTY IS
+	// present, the CLI layer shows a promptui.Select for the user to choose.
 	matches := []SDKSecretMatch{
 		{
 			SecretName: "app1-sdk",

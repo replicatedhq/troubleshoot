@@ -556,7 +556,7 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 // promptForSDKSecret presents the user with a list of discovered SDK secrets
 // and returns the credentials for the one they select.
 func promptForSDKSecret(matches []supportbundle.SDKSecretMatch) (*supportbundle.ReplicatedUploadCredentials, error) {
-	if !isatty.IsTerminal(os.Stderr.Fd()) {
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		return supportbundle.PromptForSDKSecret(matches)
 	}
 
