@@ -227,6 +227,215 @@ func TestReplicatedUpload_MultipleApps_WithAppSlug(t *testing.T) {
 	testenv.Test(t, feature)
 }
 
+func TestReplicatedUpload_MultipleApps_AcrossNamespaces_NonInteractive(t *testing.T) {
+	ns1 := envconf.RandomName("upload-ns1", 16)
+	ns2 := envconf.RandomName("upload-ns2", 16)
+
+	feature := features.New("Auto-upload lists apps across namespaces in non-interactive mode").
+		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, err := c.NewClient()
+			require.NoError(t, err)
+
+			// Create two namespaces
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				err = client.Resources().Create(ctx, nsObj)
+				require.NoError(t, err)
+			}
+
+			// App 1 in ns1
+			secret1 := makeSDKSecretResource("app-gamma", ns1, "license-gamma", "chan-gamma")
+			err = client.Resources(ns1).Create(ctx, secret1)
+			require.NoError(t, err)
+
+			// App 2 in ns2
+			secret2 := makeSDKSecretResource("app-delta", ns2, "license-delta", "chan-delta")
+			err = client.Resources(ns2).Create(ctx, secret2)
+			require.NoError(t, err)
+
+			return ctx
+		}).
+		Assess("lists both apps from different namespaces", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
+			require.NoError(t, err)
+			defer os.Remove(specFile.Name())
+			_, err = specFile.WriteString(specWithAutoUpload)
+			require.NoError(t, err)
+			specFile.Close()
+
+			// Use a namespace that has no SDK secret to trigger cross-namespace search
+			cmd := exec.CommandContext(ctx, sbBinary(),
+				"--auto-upload",
+				"--namespace", c.Namespace(),
+				"--interactive=false",
+				"--kubeconfig", cluster.GetKubeconfig(),
+				specFile.Name(),
+			)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			_ = cmd.Run()
+
+			output := stderr.String() + stdout.String()
+			// Should find both apps across namespaces
+			assert.Contains(t, output, "app-gamma")
+			assert.Contains(t, output, "app-delta")
+			// Should suggest --app-slug for selection
+			assert.Contains(t, output, "--app-slug")
+
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, _ := c.NewClient()
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				_ = client.Resources().Delete(ctx, nsObj)
+			}
+			return ctx
+		}).
+		Feature()
+
+	testenv.Test(t, feature)
+}
+
+func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithAppSlug(t *testing.T) {
+	ns1 := envconf.RandomName("upload-ns1", 16)
+	ns2 := envconf.RandomName("upload-ns2", 16)
+
+	feature := features.New("Auto-upload selects correct app across namespaces via --app-slug").
+		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, err := c.NewClient()
+			require.NoError(t, err)
+
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				err = client.Resources().Create(ctx, nsObj)
+				require.NoError(t, err)
+			}
+
+			secret1 := makeSDKSecretResource("app-gamma", ns1, "license-gamma", "chan-gamma")
+			err = client.Resources(ns1).Create(ctx, secret1)
+			require.NoError(t, err)
+
+			secret2 := makeSDKSecretResource("app-delta", ns2, "license-delta", "chan-delta")
+			err = client.Resources(ns2).Create(ctx, secret2)
+			require.NoError(t, err)
+
+			return ctx
+		}).
+		Assess("selects app-delta via --app-slug without prompting", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
+			require.NoError(t, err)
+			defer os.Remove(specFile.Name())
+			_, err = specFile.WriteString(specWithAutoUpload)
+			require.NoError(t, err)
+			specFile.Close()
+
+			cmd := exec.CommandContext(ctx, sbBinary(),
+				"--auto-upload",
+				"--app-slug", "app-delta",
+				"--namespace", c.Namespace(),
+				"--interactive=false",
+				"--kubeconfig", cluster.GetKubeconfig(),
+				specFile.Name(),
+			)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			_ = cmd.Run()
+
+			output := stderr.String() + stdout.String()
+			// Should select app-delta
+			assert.Contains(t, output, "app-delta")
+			assert.Contains(t, output, "Using SDK secret")
+			// Should NOT list multiple or prompt
+			assert.NotContains(t, output, "multiple SDK secrets found")
+
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, _ := c.NewClient()
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				_ = client.Resources().Delete(ctx, nsObj)
+			}
+			return ctx
+		}).
+		Feature()
+
+	testenv.Test(t, feature)
+}
+
+func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithSdkNamespace(t *testing.T) {
+	ns1 := envconf.RandomName("upload-ns1", 16)
+	ns2 := envconf.RandomName("upload-ns2", 16)
+
+	feature := features.New("Auto-upload selects correct namespace via --sdk-namespace").
+		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, err := c.NewClient()
+			require.NoError(t, err)
+
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				err = client.Resources().Create(ctx, nsObj)
+				require.NoError(t, err)
+			}
+
+			// Only one SDK secret per namespace, but --sdk-namespace skips cross-ns search
+			secret1 := makeSDKSecretResource("app-gamma", ns1, "license-gamma", "chan-gamma")
+			err = client.Resources(ns1).Create(ctx, secret1)
+			require.NoError(t, err)
+
+			secret2 := makeSDKSecretResource("app-delta", ns2, "license-delta", "chan-delta")
+			err = client.Resources(ns2).Create(ctx, secret2)
+			require.NoError(t, err)
+
+			return ctx
+		}).
+		Assess("uses --sdk-namespace to target specific namespace", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
+			require.NoError(t, err)
+			defer os.Remove(specFile.Name())
+			_, err = specFile.WriteString(specWithAutoUpload)
+			require.NoError(t, err)
+			specFile.Close()
+
+			cmd := exec.CommandContext(ctx, sbBinary(),
+				"--auto-upload",
+				"--sdk-namespace", ns1,
+				"--interactive=false",
+				"--kubeconfig", cluster.GetKubeconfig(),
+				specFile.Name(),
+			)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			_ = cmd.Run()
+
+			output := stderr.String() + stdout.String()
+			// Should find app-gamma in ns1 directly (no cross-namespace search)
+			assert.Contains(t, output, "app-gamma")
+			// Should NOT search all namespaces
+			assert.NotContains(t, output, "searching all namespaces")
+
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			client, _ := c.NewClient()
+			for _, ns := range []string{ns1, ns2} {
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+				_ = client.Resources().Delete(ctx, nsObj)
+			}
+			return ctx
+		}).
+		Feature()
+
+	testenv.Test(t, feature)
+}
+
 func TestReplicatedUpload_NoSDKSecret(t *testing.T) {
 	feature := features.New("Auto-upload shows helpful hints when no SDK found").
 		Assess("shows --app-slug and --sdk-namespace hints", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
