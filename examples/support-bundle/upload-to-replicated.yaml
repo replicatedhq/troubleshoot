@@ -46,13 +46,13 @@ spec:
 #   support-bundle --auto-upload spec.yaml
 #
 #   # If multiple apps are installed, specify which one:
-#   support-bundle --auto-upload --app-slug=firstresponse spec.yaml
+#   support-bundle --auto-upload --app=firstresponse spec.yaml
 #
 #   # If SDK is in a known namespace:
 #   support-bundle --auto-upload --sdk-namespace=firstresponse spec.yaml
 #
 #   # With explicit license ID (skips SDK discovery entirely):
-#   support-bundle --auto-upload --license-id=<id> --app-slug=<slug> spec.yaml
+#   support-bundle --auto-upload --license-id=<id> --app=<slug> spec.yaml
 #
 # How --auto-upload discovers credentials:
 #   1. Try extracting license from inside the bundle archive (legacy path)

@@ -826,7 +826,7 @@ func TestPromptForSDKSecret_NonInteractive(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, creds)
 	assert.Contains(t, err.Error(), "multiple SDK secrets found")
-	assert.Contains(t, err.Error(), "--app-slug")
+	assert.Contains(t, err.Error(), "--app")
 	assert.Contains(t, err.Error(), "secretName")
 }
 
@@ -884,7 +884,7 @@ func TestDiscoverReplicatedCredentials_MultipleAppsInSameNamespace_ReturnsError(
 	// Simulate what DiscoverReplicatedCredentials does with multiple matches
 	multiErr := &MultipleSDKSecretsError{Matches: matches}
 	assert.Contains(t, multiErr.Error(), "found 2 Replicated SDK secrets")
-	assert.Contains(t, multiErr.Error(), "--app-slug")
+	assert.Contains(t, multiErr.Error(), "--app")
 	assert.Contains(t, multiErr.Error(), "secretName")
 }
 

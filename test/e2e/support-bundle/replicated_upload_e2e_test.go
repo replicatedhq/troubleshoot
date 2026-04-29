@@ -125,7 +125,7 @@ func TestReplicatedUpload_MultipleApps_NonInteractive(t *testing.T) {
 
 			return ctx
 		}).
-		Assess("lists both apps and suggests --app-slug", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("lists both apps and suggests --app", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
 			require.NoError(t, err)
@@ -150,8 +150,8 @@ func TestReplicatedUpload_MultipleApps_NonInteractive(t *testing.T) {
 			// Should list both apps
 			assert.Contains(t, output, "app-alpha")
 			assert.Contains(t, output, "app-beta")
-			// Should suggest --app-slug
-			assert.Contains(t, output, "--app-slug")
+			// Should suggest --app
+			assert.Contains(t, output, "--app")
 
 			return ctx
 		}).
@@ -169,7 +169,7 @@ func TestReplicatedUpload_MultipleApps_NonInteractive(t *testing.T) {
 }
 
 func TestReplicatedUpload_MultipleApps_WithAppSlug(t *testing.T) {
-	feature := features.New("Auto-upload selects correct app via --app-slug").
+	feature := features.New("Auto-upload selects correct app via --app").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			client, err := c.NewClient()
 			require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestReplicatedUpload_MultipleApps_WithAppSlug(t *testing.T) {
 
 			return ctx
 		}).
-		Assess("uses --app-slug to select the right app", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("uses --app to select the right app", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
 			require.NoError(t, err)
@@ -195,7 +195,7 @@ func TestReplicatedUpload_MultipleApps_WithAppSlug(t *testing.T) {
 
 			cmd := exec.CommandContext(ctx, sbBinary(),
 				"--auto-upload",
-				"--app-slug", "app-beta",
+				"--app", "app-beta",
 				"--namespace", c.Namespace(),
 				"--interactive=false",
 				"--kubeconfig", cluster.GetKubeconfig(),
@@ -207,7 +207,7 @@ func TestReplicatedUpload_MultipleApps_WithAppSlug(t *testing.T) {
 			_ = cmd.Run()
 
 			output := stderr.String() + stdout.String()
-			// Discovery succeeded and selected app-beta via --app-slug
+			// Discovery succeeded and selected app-beta via --app
 			assert.Contains(t, output, "Uploading via Replicated SDK presigned URL")
 			// Should NOT prompt for selection
 			assert.NotContains(t, output, "multiple SDK secrets found")
@@ -281,8 +281,8 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_NonInteractive(t *testin
 			// Should find both apps across namespaces
 			assert.Contains(t, output, "app-gamma")
 			assert.Contains(t, output, "app-delta")
-			// Should suggest --app-slug for selection
-			assert.Contains(t, output, "--app-slug")
+			// Should suggest --app for selection
+			assert.Contains(t, output, "--app")
 
 			return ctx
 		}).
@@ -303,7 +303,7 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithAppSlug(t *testing.T
 	ns1 := envconf.RandomName("upload-ns1", 16)
 	ns2 := envconf.RandomName("upload-ns2", 16)
 
-	feature := features.New("Auto-upload selects correct app across namespaces via --app-slug").
+	feature := features.New("Auto-upload selects correct app across namespaces via --app").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			client, err := c.NewClient()
 			require.NoError(t, err)
@@ -324,7 +324,7 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithAppSlug(t *testing.T
 
 			return ctx
 		}).
-		Assess("selects app-delta via --app-slug without prompting", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("selects app-delta via --app without prompting", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
 			require.NoError(t, err)
@@ -335,7 +335,7 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithAppSlug(t *testing.T
 
 			cmd := exec.CommandContext(ctx, sbBinary(),
 				"--auto-upload",
-				"--app-slug", "app-delta",
+				"--app", "app-delta",
 				"--namespace", c.Namespace(),
 				"--interactive=false",
 				"--kubeconfig", cluster.GetKubeconfig(),
@@ -347,7 +347,7 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithAppSlug(t *testing.T
 			_ = cmd.Run()
 
 			output := stderr.String() + stdout.String()
-			// Discovery succeeded and selected app-delta via --app-slug
+			// Discovery succeeded and selected app-delta via --app
 			assert.Contains(t, output, "Uploading via Replicated SDK presigned URL")
 			// Should NOT list multiple or prompt
 			assert.NotContains(t, output, "multiple SDK secrets found")
@@ -436,7 +436,7 @@ func TestReplicatedUpload_MultipleApps_AcrossNamespaces_WithSdkNamespace(t *test
 
 func TestReplicatedUpload_NoSDKSecret(t *testing.T) {
 	feature := features.New("Auto-upload shows helpful hints when no SDK found").
-		Assess("shows --app-slug and --sdk-namespace hints", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("shows --app and --sdk-namespace hints", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			specFile, err := os.CreateTemp("", "upload-spec-*.yaml")
 			require.NoError(t, err)
@@ -460,8 +460,8 @@ func TestReplicatedUpload_NoSDKSecret(t *testing.T) {
 			output := stderr.String() + stdout.String()
 			// Should suggest flags
 			assert.True(t,
-				strings.Contains(output, "--app-slug") || strings.Contains(output, "--sdk-namespace"),
-				"should suggest --app-slug or --sdk-namespace in output: %s", output,
+				strings.Contains(output, "--app") || strings.Contains(output, "--sdk-namespace"),
+				"should suggest --app or --sdk-namespace in output: %s", output,
 			)
 			// Bundle should still be saved locally
 			assert.Contains(t, output, "support-bundle-")

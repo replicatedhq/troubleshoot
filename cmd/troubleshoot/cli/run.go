@@ -265,7 +265,10 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Attempt auto-upload before any early returns
 	if v.GetBool("auto-upload") && !response.FileUploaded {
 		licenseID := v.GetString("license-id")
-		appSlug := v.GetString("app-slug")
+		appSlug := v.GetString("app")
+		if appSlug == "" {
+			appSlug = v.GetString("app-slug") // backwards compat
+		}
 		uploadDomain := v.GetString("upload-domain")
 
 		targetDomain := uploadDomain
@@ -298,8 +301,8 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			if !response.FileUploaded {
 				fmt.Fprintf(os.Stderr, "Auto-upload: could not upload bundle automatically.\n")
 				fmt.Fprintf(os.Stderr, "To upload without regenerating, run:\n")
-				fmt.Fprintf(os.Stderr, "  support-bundle upload %s --app-slug=<slug>\n", response.ArchivePath)
-				fmt.Fprintf(os.Stderr, "Hint: try --app-slug=<slug>, --sdk-namespace=<namespace>, or --license-id=<id>\n")
+				fmt.Fprintf(os.Stderr, "  support-bundle upload %s --app=<slug>\n", response.ArchivePath)
+				fmt.Fprintf(os.Stderr, "Hint: try --app=<slug>, --sdk-namespace=<namespace>, or --license-id=<id>\n")
 			}
 		} else {
 			response.FileUploaded = true
@@ -583,7 +586,7 @@ func resolveMultipleMatches(matches []supportbundle.SDKSecretMatch, appSlug stri
 			fmt.Fprintf(os.Stderr, "Using SDK secret %s/%s (app: %s)\n", m.Namespace, m.SecretName, m.AppSlug)
 			return m.Creds, nil
 		}
-		return nil, fmt.Errorf("no SDK secret found matching --app-slug=%q", appSlug)
+		return nil, fmt.Errorf("no SDK secret found matching --app=%q", appSlug)
 	}
 	return promptForSDKSecret(matches, interactive)
 }
