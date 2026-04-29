@@ -816,7 +816,7 @@ func TestPromptForSDKSecret_NonInteractive(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, creds)
 	assert.Contains(t, err.Error(), "multiple SDK secrets found")
-	assert.Contains(t, err.Error(), "--sdk-namespace")
+	assert.Contains(t, err.Error(), "--app-slug")
 }
 
 func TestPromptForSDKSecret_SingleMatch(t *testing.T) {
@@ -873,7 +873,24 @@ func TestDiscoverReplicatedCredentials_MultipleAppsInSameNamespace_ReturnsError(
 	// Simulate what DiscoverReplicatedCredentials does with multiple matches
 	multiErr := &MultipleSDKSecretsError{Matches: matches}
 	assert.Contains(t, multiErr.Error(), "found 2 Replicated SDK secrets")
-	assert.Contains(t, multiErr.Error(), "--sdk-namespace")
+	assert.Contains(t, multiErr.Error(), "--app-slug")
+}
+
+func TestFilterByAppSlug(t *testing.T) {
+	matches := []SDKSecretMatch{
+		{SecretName: "app1-sdk", Namespace: "ns1", AppSlug: "app-one", Creds: &ReplicatedUploadCredentials{LicenseID: "lic1"}},
+		{SecretName: "app2-sdk", Namespace: "ns2", AppSlug: "app-two", Creds: &ReplicatedUploadCredentials{LicenseID: "lic2"}},
+	}
+
+	// Found
+	m := FilterByAppSlug(matches, "app-two")
+	require.NotNil(t, m)
+	assert.Equal(t, "lic2", m.Creds.LicenseID)
+	assert.Equal(t, "app-two", m.AppSlug)
+
+	// Not found
+	m = FilterByAppSlug(matches, "nonexistent")
+	assert.Nil(t, m)
 }
 
 func TestFindAllSDKCredentials_SameAppMultipleNamespaces(t *testing.T) {

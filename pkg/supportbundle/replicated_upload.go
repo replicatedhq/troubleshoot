@@ -160,7 +160,7 @@ type MultipleSDKSecretsError struct {
 }
 
 func (e *MultipleSDKSecretsError) Error() string {
-	return fmt.Sprintf("found %d Replicated SDK secrets; use --sdk-namespace to select one", len(e.Matches))
+	return fmt.Sprintf("found %d Replicated SDK secrets; use --app-slug or --sdk-namespace to select one", len(e.Matches))
 }
 
 // SDKSecretMatch represents a discovered Replicated SDK secret with its
@@ -168,7 +168,18 @@ func (e *MultipleSDKSecretsError) Error() string {
 type SDKSecretMatch struct {
 	SecretName string
 	Namespace  string
+	AppSlug    string // from app.kubernetes.io/instance label
 	Creds      *ReplicatedUploadCredentials
+}
+
+// FilterByAppSlug returns the match with the given app slug, or nil if not found.
+func FilterByAppSlug(matches []SDKSecretMatch, appSlug string) *SDKSecretMatch {
+	for i, m := range matches {
+		if m.AppSlug == appSlug {
+			return &matches[i]
+		}
+	}
+	return nil
 }
 
 // findSDKSecretsInNamespace finds all valid SDK secrets in a single namespace.
@@ -208,6 +219,7 @@ func findSDKSecretsInNamespace(clientset kubernetes.Interface, ctx context.Conte
 		matches = append(matches, SDKSecretMatch{
 			SecretName: s.Name,
 			Namespace:  s.Namespace,
+			AppSlug:    s.Labels["app.kubernetes.io/instance"],
 			Creds: &ReplicatedUploadCredentials{
 				LicenseID: licenseID,
 				ChannelID: channelID,
@@ -273,6 +285,7 @@ func FindAllSDKCredentialsWithClient(ctx context.Context, clientset kubernetes.I
 		matches = append(matches, SDKSecretMatch{
 			SecretName: s.Name,
 			Namespace:  s.Namespace,
+			AppSlug:    s.Labels["app.kubernetes.io/instance"],
 			Creds: &ReplicatedUploadCredentials{
 				LicenseID: licenseID,
 				ChannelID: channelID,
@@ -529,9 +542,13 @@ func validatePresignedURL(presignedURL string) error {
 func PromptForSDKSecret(matches []SDKSecretMatch) (*ReplicatedUploadCredentials, error) {
 	fmt.Fprintf(os.Stderr, "Found %d Replicated SDK secrets:\n", len(matches))
 	for _, m := range matches {
-		fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
+		if m.AppSlug != "" {
+			fmt.Fprintf(os.Stderr, "  - %s (namespace: %s, secret: %s)\n", m.AppSlug, m.Namespace, m.SecretName)
+		} else {
+			fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
+		}
 	}
-	return nil, fmt.Errorf("multiple SDK secrets found; use --sdk-namespace to select one")
+	return nil, fmt.Errorf("multiple SDK secrets found; use --app-slug=<slug> or --sdk-namespace=<namespace> to select one")
 }
 
 func setBasicAuth(req *http.Request, licenseID string) {

@@ -45,6 +45,9 @@ spec:
 #   # Basic auto-upload (discovers SDK secret automatically):
 #   support-bundle --auto-upload spec.yaml
 #
+#   # If multiple apps are installed, specify which one:
+#   support-bundle --auto-upload --app-slug=firstresponse spec.yaml
+#
 #   # If SDK is in a known namespace:
 #   support-bundle --auto-upload --sdk-namespace=firstresponse spec.yaml
 #
