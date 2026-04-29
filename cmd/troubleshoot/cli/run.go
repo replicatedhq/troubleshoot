@@ -273,8 +273,29 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to %s...\n", targetDomain)
 		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug, uploadDomain); err != nil {
-			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
-			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+			// Fallback: try the presigned URL flow using in-cluster SDK credentials
+			if restConfig != nil {
+				namespace := v.GetString("namespace")
+				if namespace == "" {
+					namespace = "default"
+				}
+				creds, credErr := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, namespace, "")
+				if credErr == nil {
+					fmt.Fprintf(os.Stderr, "Trying presigned URL upload via SDK credentials...\n")
+					slug, uploadErr := supportbundle.UploadSupportBundleToReplicated(creds, response.ArchivePath)
+					if uploadErr == nil {
+						fmt.Fprintf(os.Stderr, "Support bundle uploaded to Replicated (slug: %s)\n", slug)
+						response.FileUploaded = true
+					} else {
+						fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", uploadErr)
+					}
+				}
+			}
+
+			if !response.FileUploaded {
+				fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
+				fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+			}
 		} else {
 			response.FileUploaded = true
 		}
