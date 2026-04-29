@@ -27,8 +27,26 @@ type ResultRequest struct {
 }
 
 type AfterCollection struct {
-	UploadResultsTo *ResultRequest `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
-	Callback        *ResultRequest `json:"callback,omitempty" yaml:"callback,omitempty"`
+	UploadResultsTo    *ResultRequest          `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
+	Callback           *ResultRequest          `json:"callback,omitempty" yaml:"callback,omitempty"`
+	UploadToReplicated *UploadToReplicatedSpec  `json:"uploadToReplicated,omitempty" yaml:"uploadToReplicated,omitempty"`
+}
+
+// UploadToReplicatedSpec configures uploading support bundles to the Replicated
+// vendor portal via the presigned S3 URL flow. The license ID, channel ID, and
+// endpoint are auto-discovered from the in-cluster Replicated SDK secret.
+type UploadToReplicatedSpec struct {
+	// SecretName overrides the default name ("replicated") of the SDK secret.
+	// +optional
+	SecretName string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
+	// SecretNamespace overrides the namespace to look for the SDK secret.
+	// Defaults to the namespace troubleshoot is running in.
+	// +optional
+	SecretNamespace string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
+	// Endpoint overrides the Replicated API endpoint. Defaults to the value
+	// from the SDK secret, or https://replicated.app.
+	// +optional
+	Endpoint string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 }
 
 // CollectorSpec defines the desired state of Collector
