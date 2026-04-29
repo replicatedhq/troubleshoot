@@ -29,7 +29,7 @@ type ResultRequest struct {
 type AfterCollection struct {
 	UploadResultsTo    *ResultRequest          `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
 	Callback           *ResultRequest          `json:"callback,omitempty" yaml:"callback,omitempty"`
-	UploadToReplicated *UploadToReplicatedSpec  `json:"uploadToReplicated,omitempty" yaml:"uploadToReplicated,omitempty"`
+	UploadToReplicated *UploadToReplicatedSpec `json:"uploadToReplicated,omitempty" yaml:"uploadToReplicated,omitempty"`
 }
 
 // UploadToReplicatedSpec configures uploading support bundles to the Replicated

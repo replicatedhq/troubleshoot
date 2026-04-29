@@ -28,9 +28,9 @@ const (
 	// integrationLicenseIDKey is the secret key for the license ID set by the SDK chart.
 	integrationLicenseIDKey = "integration-license-id"
 	// replicatedConfigKey is the secret key for the full SDK config YAML.
-	replicatedConfigKey = "config.yaml"
-	s3UploadTimeout     = 30 * time.Minute
-	apiRequestTimeout   = 30 * time.Second
+	replicatedConfigKey   = "config.yaml"
+	s3UploadTimeout       = 30 * time.Minute
+	apiRequestTimeout     = 30 * time.Second
 	maxErrorResponseBytes = 1024 * 1024 // 1 MB
 )
 
@@ -374,4 +374,3 @@ func setBasicAuth(req *http.Request, licenseID string) {
 	auth := base64.StdEncoding.EncodeToString([]byte(licenseID + ":" + licenseID))
 	req.Header.Set("Authorization", "Basic "+auth)
 }
-
