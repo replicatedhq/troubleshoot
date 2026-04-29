@@ -17,6 +17,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 type AnalyzeNodeResources struct {
@@ -56,6 +57,9 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
+		if _, ok := err.(*types.NotFoundError); !ok {
+			return nil, errors.Wrap(err, "failed to get contents of nodes.json")
+		}
 		if analyzer.IgnoreIfNoFiles {
 			return nil, nil
 		}

@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
@@ -1687,8 +1688,8 @@ func Test_analyzeNodeResources(t *testing.T) {
 }
 
 func Test_analyzeNodeResources_NoFiles(t *testing.T) {
-	missingFile := func(string) ([]byte, error) {
-		return nil, fmt.Errorf("file %s was not collected", "cluster-resources/nodes.json")
+	missingFile := func(name string) ([]byte, error) {
+		return nil, &types.NotFoundError{Name: name}
 	}
 
 	t.Run("emits warning when nodes.json is not collected", func(t *testing.T) {
@@ -1718,5 +1719,23 @@ func Test_analyzeNodeResources_NoFiles(t *testing.T) {
 		got, err := a.Analyze(missingFile, nil)
 		req.NoError(err)
 		req.Empty(got)
+	})
+
+	t.Run("non-NotFound errors are propagated", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			IgnoreIfNoFiles: true,
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		ioErr := func(string) ([]byte, error) {
+			return nil, fmt.Errorf("permission denied")
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(ioErr, nil)
+		req.Error(err)
+		req.Nil(got)
+		req.Contains(err.Error(), "permission denied")
 	})
 }
