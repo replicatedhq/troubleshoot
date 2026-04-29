@@ -127,7 +127,8 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 		}
 
 		if secretData == nil {
-			return nil, fmt.Errorf("no Replicated SDK secret found in namespace %s (looked for helm.sh/chart label with prefix %q)", namespace, replicatedSDKChartLabelPrefix)
+			return nil, fmt.Errorf("no Replicated SDK secret found in namespace %q (looked for helm.sh/chart label with prefix %q). "+
+				"If the SDK is installed in a different namespace, use --sdk-namespace to specify it", namespace, replicatedSDKChartLabelPrefix)
 		}
 	}
 
@@ -156,6 +157,58 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 		ChannelID: channelID,
 		Endpoint:  strings.TrimRight(endpoint, "/"),
 	}, nil
+}
+
+// DiscoverReplicatedCredentialsAcrossNamespaces searches all namespaces for
+// the SDK secret when single-namespace discovery fails. This handles the case
+// where the SDK is installed in a namespace different from where troubleshoot
+// is running (e.g., custom Helm CLI installs).
+//
+// Requires RBAC: the service account must have `list` on secrets cluster-wide.
+func DiscoverReplicatedCredentialsAcrossNamespaces(ctx context.Context, restConfig *rest.Config) (*ReplicatedUploadCredentials, error) {
+	clientset, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "create kubernetes clientset")
+	}
+
+	// Search all namespaces for the SDK secret
+	secrets, err := clientset.CoreV1().Secrets("").List(ctx, metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/managed-by=Helm",
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "list secrets across all namespaces")
+	}
+
+	for _, s := range secrets.Items {
+		chartLabel := s.Labels["helm.sh/chart"]
+		if strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
+			licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
+			if err != nil {
+				continue // try next match
+			}
+
+			channelID, endpoint, err := extractConfigFields(s.Data)
+			if err != nil {
+				continue
+			}
+
+			if endpoint == "" {
+				endpoint = defaultReplicatedAppEndpoint
+			}
+
+			if err := validateEndpoint(endpoint); err != nil {
+				continue
+			}
+
+			return &ReplicatedUploadCredentials{
+				LicenseID: licenseID,
+				ChannelID: channelID,
+				Endpoint:  strings.TrimRight(endpoint, "/"),
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no Replicated SDK secret found in any namespace")
 }
 
 // extractLicenseID tries the integration-license-id key first, then falls back

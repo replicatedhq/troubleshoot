@@ -275,11 +275,8 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug, uploadDomain); err != nil {
 			// Fallback: try the presigned URL flow using in-cluster SDK credentials
 			if restConfig != nil {
-				namespace := v.GetString("namespace")
-				if namespace == "" {
-					namespace = "default"
-				}
-				creds, credErr := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, namespace, "")
+				sdkNamespace := v.GetString("sdk-namespace")
+				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"))
 				if credErr == nil {
 					fmt.Fprintf(os.Stderr, "Trying presigned URL upload via SDK credentials...\n")
 					slug, uploadErr := supportbundle.UploadSupportBundleToReplicated(creds, response.ArchivePath)
@@ -295,6 +292,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			if !response.FileUploaded {
 				fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
 				fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+				fmt.Fprintf(os.Stderr, "Hint: if the Replicated SDK is in a different namespace, try --sdk-namespace=<namespace>\n")
 			}
 		} else {
 			response.FileUploaded = true
@@ -510,6 +508,31 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	mainBundle.Spec.HostAnalyzers = util.Dedup(mainBundle.Spec.HostAnalyzers)
 
 	return mainBundle, additionalRedactors, nil
+}
+
+// discoverSDKCredentials attempts to find the Replicated SDK credentials.
+// Strategy:
+//  1. If sdkNamespace is explicitly provided, search only that namespace.
+//  2. Otherwise, try the collector namespace first.
+//  3. If not found, search across all namespaces as a final fallback.
+func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace string) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if sdkNamespace != "" {
+		return supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
+	}
+
+	// Try the collector namespace first
+	ns := collectorNamespace
+	if ns == "" {
+		ns = "default"
+	}
+	creds, err := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, ns, "")
+	if err == nil {
+		return creds, nil
+	}
+
+	// Fallback: search all namespaces
+	fmt.Fprintf(os.Stderr, "SDK secret not found in namespace %q, searching all namespaces...\n", ns)
+	return supportbundle.DiscoverReplicatedCredentialsAcrossNamespaces(ctx, restConfig)
 }
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
