@@ -33,18 +33,22 @@ type AfterCollection struct {
 }
 
 // UploadToReplicatedSpec configures uploading support bundles to the Replicated
-// vendor portal via the presigned S3 URL flow. The license ID, channel ID, and
-// endpoint are auto-discovered from the in-cluster Replicated SDK secret.
+// vendor portal via presigned S3 URLs. Credentials are auto-discovered from the
+// live cluster by reading the Replicated SDK Kubernetes Secret.
 //
-// The SDK secret is discovered by its Helm chart label (helm.sh/chart: replicated-*).
-// Its name follows the convention {APP_NAME}-sdk (e.g., "myapp-sdk").
+// SDK secret discovery:
+//   - Found by the label helm.sh/chart with prefix "replicated-"
+//   - Name follows the convention {APP_NAME}-sdk (e.g., "firstresponse-sdk")
+//   - License ID is read from the "config.yaml" key in the secret data
+//   - Falls back to "integration-license-id" key if config.yaml is absent
 //
 // Upload flow:
 //  1. Get a presigned S3 URL from POST /v3/supportbundle/upload-url
 //  2. PUT the bundle archive directly to S3
 //  3. Notify the API via POST /v3/supportbundle/{bundleID}/uploaded
 //
-// RBAC: The service account needs "get" and "list" on secrets in the target namespace.
+// RBAC: The service account needs "get" and "list" on secrets in the target
+// namespace, or cluster-wide for cross-namespace discovery.
 // See examples/support-bundle/upload-to-replicated.yaml for a complete example.
 type UploadToReplicatedSpec struct {
 	// SecretName overrides the auto-discovered SDK secret name.

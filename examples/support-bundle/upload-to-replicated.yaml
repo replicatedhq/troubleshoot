@@ -8,14 +8,17 @@ spec:
     - clusterResources: {}
   afterCollection:
     # Upload the support bundle to the Replicated vendor portal using
-    # presigned S3 URLs. The license ID, channel ID, and API endpoint are
-    # auto-discovered from the Replicated SDK secret in the cluster.
+    # presigned S3 URLs. Credentials are auto-discovered from the live
+    # cluster by reading the Replicated SDK Kubernetes Secret (NOT from
+    # inside the bundle archive).
     #
-    # The SDK secret is found by its Helm chart label (helm.sh/chart: replicated-*).
-    # Its name follows the convention {APP_NAME}-sdk (e.g., "myapp-sdk").
+    # SDK secret discovery:
+    #   - Found by the label helm.sh/chart with prefix "replicated-"
+    #   - The secret name follows {APP_NAME}-sdk (e.g., "firstresponse-sdk")
+    #   - The license ID is read from the "config.yaml" key in the secret
     #
-    # RBAC: The service account running the support bundle collector needs
-    # "get" and "list" permissions on secrets in the target namespace.
+    # RBAC: The service account needs "get" and "list" on secrets in the
+    # target namespace (or cluster-wide for cross-namespace discovery).
     - uploadToReplicated: {}
 
 ---
@@ -37,30 +40,35 @@ spec:
         endpoint: "https://replicated.app"
 
 ---
-# CLI usage with --auto-upload:
+# CLI usage with --auto-upload (no spec changes needed):
 #
-#   # Basic auto-upload (discovers SDK in the collector namespace):
-#   kubectl support-bundle --auto-upload spec.yaml
+#   # Basic auto-upload (discovers SDK secret automatically):
+#   support-bundle --auto-upload spec.yaml
 #
-#   # If SDK is in a different namespace:
-#   kubectl support-bundle --auto-upload --sdk-namespace=app-ns spec.yaml
+#   # If SDK is in a known namespace:
+#   support-bundle --auto-upload --sdk-namespace=firstresponse spec.yaml
 #
-#   # With explicit license ID (skips SDK discovery):
-#   kubectl support-bundle --auto-upload --license-id=<id> --app-slug=<slug> spec.yaml
+#   # With explicit license ID (skips SDK discovery entirely):
+#   support-bundle --auto-upload --license-id=<id> --app-slug=<slug> spec.yaml
 #
-# Discovery order for --auto-upload:
-#   1. Try extracting license from inside the bundle archive
-#   2. Try the Replicated SDK secret in the collector namespace (or --sdk-namespace)
-#   3. Search all namespaces for the SDK secret as a final fallback
-#   4. If multiple SDK secrets are found, prompt to select one (interactive)
-#      or list them with a hint to use --sdk-namespace (non-interactive)
-#   5. If none found, suggest --sdk-namespace or --license-id
+# How --auto-upload discovers credentials:
+#   1. Try extracting license from inside the bundle archive (legacy path)
+#   2. Query the Kubernetes API for the SDK secret:
+#      a. Search --sdk-namespace if provided
+#      b. Otherwise search --namespace (or "default")
+#      c. Fall back to searching ALL namespaces
+#   3. If multiple SDK secrets are found, prompt to select (interactive)
+#      or list them and suggest --sdk-namespace (non-interactive)
+#   4. If none found, show hints for --sdk-namespace or --license-id
 #
-# Discovery errors are non-fatal: they are logged to stderr but never
-# affect the support bundle collection or its contents.
+# Upload errors are non-fatal: they are logged to stderr but never
+# affect the support bundle collection or its contents. The bundle
+# is always saved locally regardless of upload outcome.
 
 ---
 # RBAC required for the support bundle service account:
+#
+# For single-namespace discovery (--sdk-namespace or same namespace):
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -84,3 +92,27 @@ subjects:
   - kind: ServiceAccount
     name: default
     namespace: app-namespace
+
+---
+# For cross-namespace discovery (searching all namespaces):
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: support-bundle-replicated-upload
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-bundle-replicated-upload
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: support-bundle-replicated-upload
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
