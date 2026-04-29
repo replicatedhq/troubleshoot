@@ -557,12 +557,7 @@ func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNam
 // and returns the credentials for the one they select.
 func promptForSDKSecret(matches []supportbundle.SDKSecretMatch) (*supportbundle.ReplicatedUploadCredentials, error) {
 	if !isatty.IsTerminal(os.Stderr.Fd()) {
-		// Non-interactive: list what was found and ask for --sdk-namespace
-		fmt.Fprintf(os.Stderr, "Found %d Replicated SDK secrets:\n", len(matches))
-		for _, m := range matches {
-			fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
-		}
-		return nil, fmt.Errorf("multiple SDK secrets found; use --sdk-namespace to select one")
+		return supportbundle.PromptForSDKSecret(matches)
 	}
 
 	items := make([]string, len(matches))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -669,4 +670,179 @@ func TestDiscoverReplicatedCredentials_MultipleHelmSecrets(t *testing.T) {
 	licenseID, err := extractLicenseID(foundData, foundName, "app-ns")
 	require.NoError(t, err)
 	assert.Equal(t, "correct-license", licenseID)
+}
+
+// --- E2E-style tests for multi-app cluster scenarios ---
+
+// makeSDKSecret creates a realistic SDK secret matching the Helm template output.
+// The license is stored as a YAML string in config.yaml (matching real cluster behavior).
+func makeSDKSecret(appName, namespace, licenseID, channelID string) *corev1.Secret {
+	configYAML := fmt.Sprintf(
+		"license: |\n  apiVersion: kots.io/v1beta1\n  kind: License\n  spec:\n    licenseID: %s\n    appSlug: %s\nchannelID: %q\nreplicatedAppEndpoint: \"https://replicated.app\"\n",
+		licenseID, appName, channelID,
+	)
+	return newFakeSecret(appName+"-sdk", namespace, map[string]string{
+		"helm.sh/chart":                "replicated-1.19.2",
+		"app.kubernetes.io/name":       appName + "-sdk",
+		"app.kubernetes.io/instance":   appName,
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{
+		"config.yaml": []byte(configYAML),
+	})
+}
+
+// makeNonSDKSecret creates a replicated chart secret that is NOT the SDK config
+// (e.g., pull secrets, support metadata). These should be skipped by discovery.
+func makeNonSDKSecret(name, namespace string) *corev1.Secret {
+	return newFakeSecret(name, namespace, map[string]string{
+		"helm.sh/chart":                "replicated-1.19.2",
+		"app.kubernetes.io/managed-by": "Helm",
+	}, map[string][]byte{
+		"some-other-key": []byte("not-a-license"),
+	})
+}
+
+func TestFindAllSDKCredentials_MultipleAppsInCluster(t *testing.T) {
+	// Simulate a cluster with two Replicated apps in different namespaces,
+	// each with their own SDK secret plus other replicated chart secrets.
+
+	// App 1: "firstresponse" in namespace "firstresponse"
+	app1SDK := makeSDKSecret("firstresponse", "firstresponse", "license-fr-001", "chan-fr")
+	app1Pull := makeNonSDKSecret("enterprise-pull-secret", "firstresponse")
+	app1SB := makeNonSDKSecret("firstresponse-sdk-supportbundle", "firstresponse")
+	app1Meta := makeNonSDKSecret("replicated-support-metadata", "firstresponse")
+
+	// App 2: "k8laude" in namespace "demo"
+	app2SDK := makeSDKSecret("k8laude", "demo", "license-k8-002", "chan-k8")
+	app2Pull := makeNonSDKSecret("enterprise-pull-secret", "demo")
+
+	// Unrelated Helm chart
+	pgSecret := newFakeSecret("postgres", "demo", map[string]string{
+		"helm.sh/chart": "postgresql-15.0.0",
+	}, map[string][]byte{"password": []byte("pg")})
+
+	clientset := fake.NewSimpleClientset(
+		app1SDK, app1Pull, app1SB, app1Meta,
+		app2SDK, app2Pull,
+		pgSecret,
+	)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+
+	// Should find exactly 2 SDK secrets (one per app), skipping pull/meta/supportbundle secrets
+	require.Len(t, matches, 2, "should find exactly 2 SDK secrets for 2 apps")
+
+	// Verify both apps are found with correct credentials
+	foundApps := map[string]SDKSecretMatch{}
+	for _, m := range matches {
+		foundApps[m.Namespace+"/"+m.SecretName] = m
+	}
+
+	fr, ok := foundApps["firstresponse/firstresponse-sdk"]
+	require.True(t, ok, "should find firstresponse SDK secret")
+	assert.Equal(t, "license-fr-001", fr.Creds.LicenseID)
+	assert.Equal(t, "chan-fr", fr.Creds.ChannelID)
+	assert.Equal(t, "https://replicated.app", fr.Creds.Endpoint)
+
+	k8, ok := foundApps["demo/k8laude-sdk"]
+	require.True(t, ok, "should find k8laude SDK secret")
+	assert.Equal(t, "license-k8-002", k8.Creds.LicenseID)
+	assert.Equal(t, "chan-k8", k8.Creds.ChannelID)
+}
+
+func TestFindAllSDKCredentials_SingleAppInCluster(t *testing.T) {
+	sdk := makeSDKSecret("myapp", "production", "license-prod-123", "chan-prod")
+	pullSecret := makeNonSDKSecret("enterprise-pull-secret", "production")
+
+	clientset := fake.NewSimpleClientset(sdk, pullSecret)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+	assert.Equal(t, "myapp-sdk", matches[0].SecretName)
+	assert.Equal(t, "production", matches[0].Namespace)
+	assert.Equal(t, "license-prod-123", matches[0].Creds.LicenseID)
+}
+
+func TestFindAllSDKCredentials_NoAppsInCluster(t *testing.T) {
+	// Only non-replicated Helm charts
+	pgSecret := newFakeSecret("postgres", "default", map[string]string{
+		"helm.sh/chart": "postgresql-15.0.0",
+	}, map[string][]byte{"password": []byte("pg")})
+
+	clientset := fake.NewSimpleClientset(pgSecret)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+	assert.Empty(t, matches)
+}
+
+func TestFindAllSDKCredentials_SkipsSecretsWithoutLicense(t *testing.T) {
+	// All secrets have the replicated- chart label, but only the SDK secret
+	// has config.yaml with a valid license
+	sdkSecret := makeSDKSecret("myapp", "app-ns", "valid-license", "chan-1")
+	pullSecret := makeNonSDKSecret("enterprise-pull-secret", "app-ns")
+	metaSecret := makeNonSDKSecret("replicated-support-metadata", "app-ns")
+	sbSecret := makeNonSDKSecret("myapp-sdk-supportbundle", "app-ns")
+
+	clientset := fake.NewSimpleClientset(sdkSecret, pullSecret, metaSecret, sbSecret)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+	require.Len(t, matches, 1, "should only match the secret with valid license data")
+	assert.Equal(t, "myapp-sdk", matches[0].SecretName)
+}
+
+func TestPromptForSDKSecret_NonInteractive(t *testing.T) {
+	// In test (non-TTY), promptForSDKSecret should return an error listing all matches
+	matches := []SDKSecretMatch{
+		{
+			SecretName: "app1-sdk",
+			Namespace:  "ns1",
+			Creds:      &ReplicatedUploadCredentials{LicenseID: "lic1", ChannelID: "ch1", Endpoint: "https://replicated.app"},
+		},
+		{
+			SecretName: "app2-sdk",
+			Namespace:  "ns2",
+			Creds:      &ReplicatedUploadCredentials{LicenseID: "lic2", ChannelID: "ch2", Endpoint: "https://replicated.app"},
+		},
+	}
+
+	creds, err := PromptForSDKSecret(matches)
+	require.Error(t, err)
+	assert.Nil(t, creds)
+	assert.Contains(t, err.Error(), "multiple SDK secrets found")
+	assert.Contains(t, err.Error(), "--sdk-namespace")
+}
+
+func TestPromptForSDKSecret_SingleMatch(t *testing.T) {
+	// With only one match, the caller should use it directly (no prompt needed).
+	// This tests the expected calling pattern, not promptForSDKSecret itself.
+	matches := []SDKSecretMatch{
+		{
+			SecretName: "myapp-sdk",
+			Namespace:  "production",
+			Creds:      &ReplicatedUploadCredentials{LicenseID: "lic-single", ChannelID: "ch-single", Endpoint: "https://replicated.app"},
+		},
+	}
+
+	assert.Len(t, matches, 1)
+	assert.Equal(t, "lic-single", matches[0].Creds.LicenseID)
+}
+
+func TestFindAllSDKCredentials_SameAppMultipleNamespaces(t *testing.T) {
+	// Same app installed in staging and production namespaces
+	staging := makeSDKSecret("myapp", "staging", "license-staging", "chan-staging")
+	production := makeSDKSecret("myapp", "production", "license-prod", "chan-prod")
+
+	clientset := fake.NewSimpleClientset(staging, production)
+
+	matches, err := FindAllSDKCredentialsWithClient(context.Background(), clientset)
+	require.NoError(t, err)
+	require.Len(t, matches, 2, "should find both installations")
+
+	namespaces := []string{matches[0].Namespace, matches[1].Namespace}
+	assert.Contains(t, namespaces, "staging")
+	assert.Contains(t, namespaces, "production")
 }

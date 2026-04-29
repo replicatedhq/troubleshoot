@@ -177,7 +177,12 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 	if err != nil {
 		return nil, errors.Wrap(err, "create kubernetes clientset")
 	}
+	return FindAllSDKCredentialsWithClient(ctx, clientset)
+}
 
+// FindAllSDKCredentialsWithClient is the testable core of FindAllSDKCredentials.
+// It accepts a kubernetes.Interface so tests can pass a fake client.
+func FindAllSDKCredentialsWithClient(ctx context.Context, clientset kubernetes.Interface) ([]SDKSecretMatch, error) {
 	// Use helm.sh/chart label (confirmed present on SDK secrets) rather than
 	// app.kubernetes.io/managed-by which may not be on all secrets.
 	secrets, err := clientset.CoreV1().Secrets("").List(ctx, metav1.ListOptions{
@@ -462,6 +467,18 @@ func validatePresignedURL(presignedURL string) error {
 		return fmt.Errorf("presigned URL must use HTTPS (got %q)", parsed.Scheme)
 	}
 	return nil
+}
+
+// PromptForSDKSecret handles the case where multiple SDK secrets are found.
+// In non-interactive mode (no TTY), it returns an error listing all matches
+// and suggesting --sdk-namespace. In interactive mode, the caller (CLI layer)
+// should present a selection prompt.
+func PromptForSDKSecret(matches []SDKSecretMatch) (*ReplicatedUploadCredentials, error) {
+	fmt.Fprintf(os.Stderr, "Found %d Replicated SDK secrets:\n", len(matches))
+	for _, m := range matches {
+		fmt.Fprintf(os.Stderr, "  - %s/%s\n", m.Namespace, m.SecretName)
+	}
+	return nil, fmt.Errorf("multiple SDK secrets found; use --sdk-namespace to select one")
 }
 
 func setBasicAuth(req *http.Request, licenseID string) {
