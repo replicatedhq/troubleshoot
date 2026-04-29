@@ -275,6 +275,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to %s...\n", targetDomain)
 		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug, uploadDomain); err != nil {
+			fmt.Fprintf(os.Stderr, "Bundle-based upload failed: %v\n", err)
 			// Fallback: try the presigned URL flow using in-cluster SDK credentials.
 			// Discovery errors are non-fatal — we log them to stderr and move on.
 			if restConfig != nil {
