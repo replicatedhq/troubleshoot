@@ -1836,6 +1836,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "ignoreIfNoFiles": {
+                    "type": "boolean"
+                  },
                   "filters": {
                     "type": "object",
                     "properties": {

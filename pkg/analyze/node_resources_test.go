@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
@@ -1683,4 +1685,57 @@ func Test_analyzeNodeResources(t *testing.T) {
 			req.Equal(tt.want, got)
 		})
 	}
+}
+
+func Test_analyzeNodeResources_NoFiles(t *testing.T) {
+	missingFile := func(name string) ([]byte, error) {
+		return nil, &types.NotFoundError{Name: name}
+	}
+
+	t.Run("emits warning when nodes.json is not collected", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(missingFile, nil)
+		req.NoError(err)
+		req.Len(got, 1)
+		req.True(got[0].IsWarn)
+		req.Equal("Node Resources", got[0].Title)
+	})
+
+	t.Run("ignoreIfNoFiles suppresses the warning", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			IgnoreIfNoFiles: true,
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(missingFile, nil)
+		req.NoError(err)
+		req.Empty(got)
+	})
+
+	t.Run("non-NotFound errors are propagated", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			IgnoreIfNoFiles: true,
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		ioErr := func(string) ([]byte, error) {
+			return nil, fmt.Errorf("permission denied")
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(ioErr, nil)
+		req.Error(err)
+		req.Nil(got)
+		req.Contains(err.Error(), "permission denied")
+	})
 }

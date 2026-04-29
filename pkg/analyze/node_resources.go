@@ -17,6 +17,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 type AnalyzeNodeResources struct {
@@ -45,6 +46,9 @@ func (a *AnalyzeNodeResources) Analyze(getFile getCollectedFileContents, findFil
 	if err != nil {
 		return nil, err
 	}
+	if result == nil {
+		return nil, nil
+	}
 	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 	return []*AnalyzeResult{result}, nil
 }
@@ -53,7 +57,19 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
+		if _, ok := err.(*types.NotFoundError); !ok {
+			return nil, errors.Wrap(err, "failed to get contents of nodes.json")
+		}
+		if analyzer.IgnoreIfNoFiles {
+			return nil, nil
+		}
+		return &AnalyzeResult{
+			Title:   a.Title(),
+			IconKey: "kubernetes_node_resources",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			IsWarn:  true,
+			Message: "No node resources were collected, unable to analyze node resources",
+		}, nil
 	}
 
 	var nodes corev1.NodeList

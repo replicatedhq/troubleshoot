@@ -1,0 +1,37 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: node-resources-no-files-test
+spec:
+  collectors:
+    - clusterResources:
+        exclude: true
+    - clusterInfo:
+        exclude: true
+  analyzers:
+    - nodeResources:
+        checkName: warn-default
+        outcomes:
+          - fail:
+              when: "count() < 3"
+              message: This application requires at least 3 nodes
+          - pass:
+              message: This cluster has enough nodes
+    - nodeResources:
+        checkName: warn-explicit-false
+        ignoreIfNoFiles: false
+        outcomes:
+          - fail:
+              when: "min(memoryCapacity) < 16Gi"
+              message: All nodes must have at least 16Gi of memory
+          - pass:
+              message: All nodes have at least 16Gi of memory
+    - nodeResources:
+        checkName: ignored
+        ignoreIfNoFiles: true
+        outcomes:
+          - fail:
+              when: "count() < 3"
+              message: This application requires at least 3 nodes
+          - pass:
+              message: This cluster has enough nodes
