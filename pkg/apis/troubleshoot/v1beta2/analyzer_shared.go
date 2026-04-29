@@ -130,9 +130,10 @@ type Distribution struct {
 }
 
 type NodeResources struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome           `json:"outcomes" yaml:"outcomes"`
-	Filters     *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+	AnalyzeMeta     `json:",inline" yaml:",inline"`
+	Outcomes        []*Outcome           `json:"outcomes" yaml:"outcomes"`
+	Filters         *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+	IgnoreIfNoFiles bool                 `json:"ignoreIfNoFiles,omitempty" yaml:"ignoreIfNoFiles,omitempty"`
 }
 
 type NodeResourceFilters struct {

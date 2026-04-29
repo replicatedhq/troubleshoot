@@ -1360,6 +1360,8 @@ spec:
                               - key
                               type: object
                           type: object
+                        ignoreIfNoFiles:
+                          type: boolean
                         outcomes:
                           items:
                             properties:

@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1683,4 +1684,39 @@ func Test_analyzeNodeResources(t *testing.T) {
 			req.Equal(tt.want, got)
 		})
 	}
+}
+
+func Test_analyzeNodeResources_NoFiles(t *testing.T) {
+	missingFile := func(string) ([]byte, error) {
+		return nil, fmt.Errorf("file %s was not collected", "cluster-resources/nodes.json")
+	}
+
+	t.Run("emits warning when nodes.json is not collected", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(missingFile, nil)
+		req.NoError(err)
+		req.Len(got, 1)
+		req.True(got[0].IsWarn)
+		req.Equal("Node Resources", got[0].Title)
+	})
+
+	t.Run("ignoreIfNoFiles suppresses the warning", func(t *testing.T) {
+		req := require.New(t)
+		analyzer := &troubleshootv1beta2.NodeResources{
+			IgnoreIfNoFiles: true,
+			Outcomes: []*troubleshootv1beta2.Outcome{
+				{Pass: &troubleshootv1beta2.SingleOutcome{Message: "ok"}},
+			},
+		}
+		a := AnalyzeNodeResources{analyzer: analyzer}
+		got, err := a.Analyze(missingFile, nil)
+		req.NoError(err)
+		req.Empty(got)
+	})
 }
