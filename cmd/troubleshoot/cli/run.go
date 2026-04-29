@@ -291,7 +291,8 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 			if !response.FileUploaded {
 				fmt.Fprintf(os.Stderr, "Auto-upload: could not upload bundle automatically.\n")
-				fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+				fmt.Fprintf(os.Stderr, "To upload without regenerating, run:\n")
+				fmt.Fprintf(os.Stderr, "  support-bundle upload %s --app-slug=<slug>\n", response.ArchivePath)
 				fmt.Fprintf(os.Stderr, "Hint: try --app-slug=<slug>, --sdk-namespace=<namespace>, or --license-id=<id>\n")
 			}
 		} else {
@@ -521,7 +522,14 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 // All failures are returned as errors but should be treated as non-fatal by callers.
 func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace, appSlug string) (*supportbundle.ReplicatedUploadCredentials, error) {
 	if sdkNamespace != "" {
-		return supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
+		creds, err := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
+		if err != nil {
+			var multiErr *supportbundle.MultipleSDKSecretsError
+			if errors.As(err, &multiErr) {
+				return resolveMultipleMatches(multiErr.Matches, appSlug)
+			}
+		}
+		return creds, err
 	}
 
 	// Try the collector namespace first

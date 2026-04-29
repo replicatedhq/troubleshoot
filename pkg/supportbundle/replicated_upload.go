@@ -15,6 +15,7 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -182,6 +183,44 @@ func FilterByAppSlug(matches []SDKSecretMatch, appSlug string) *SDKSecretMatch {
 	return nil
 }
 
+// matchSecretToSDK checks if a secret is a valid SDK secret and extracts its
+// credentials. Returns nil if the secret doesn't match or can't be parsed.
+func matchSecretToSDK(s corev1.Secret) *SDKSecretMatch {
+	chartLabel := s.Labels["helm.sh/chart"]
+	if !strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
+		return nil
+	}
+
+	licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
+	if err != nil {
+		return nil
+	}
+
+	channelID, endpoint, err := extractConfigFields(s.Data)
+	if err != nil {
+		return nil
+	}
+
+	if endpoint == "" {
+		endpoint = defaultReplicatedAppEndpoint
+	}
+
+	if err := validateEndpoint(endpoint); err != nil {
+		return nil
+	}
+
+	return &SDKSecretMatch{
+		SecretName: s.Name,
+		Namespace:  s.Namespace,
+		AppSlug:    s.Labels["app.kubernetes.io/instance"],
+		Creds: &ReplicatedUploadCredentials{
+			LicenseID: licenseID,
+			ChannelID: channelID,
+			Endpoint:  strings.TrimRight(endpoint, "/"),
+		},
+	}
+}
+
 // findSDKSecretsInNamespace finds all valid SDK secrets in a single namespace.
 func findSDKSecretsInNamespace(clientset kubernetes.Interface, ctx context.Context, namespace string) ([]SDKSecretMatch, error) {
 	secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
@@ -193,41 +232,10 @@ func findSDKSecretsInNamespace(clientset kubernetes.Interface, ctx context.Conte
 
 	var matches []SDKSecretMatch
 	for _, s := range secrets.Items {
-		chartLabel := s.Labels["helm.sh/chart"]
-		if !strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
-			continue
+		if m := matchSecretToSDK(s); m != nil {
+			matches = append(matches, *m)
 		}
-
-		licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
-		if err != nil {
-			continue
-		}
-
-		channelID, endpoint, err := extractConfigFields(s.Data)
-		if err != nil {
-			continue
-		}
-
-		if endpoint == "" {
-			endpoint = defaultReplicatedAppEndpoint
-		}
-
-		if err := validateEndpoint(endpoint); err != nil {
-			continue
-		}
-
-		matches = append(matches, SDKSecretMatch{
-			SecretName: s.Name,
-			Namespace:  s.Namespace,
-			AppSlug:    s.Labels["app.kubernetes.io/instance"],
-			Creds: &ReplicatedUploadCredentials{
-				LicenseID: licenseID,
-				ChannelID: channelID,
-				Endpoint:  strings.TrimRight(endpoint, "/"),
-			},
-		})
 	}
-
 	return matches, nil
 }
 
@@ -248,8 +256,6 @@ func FindAllSDKCredentials(ctx context.Context, restConfig *rest.Config) ([]SDKS
 // FindAllSDKCredentialsWithClient is the testable core of FindAllSDKCredentials.
 // It accepts a kubernetes.Interface so tests can pass a fake client.
 func FindAllSDKCredentialsWithClient(ctx context.Context, clientset kubernetes.Interface) ([]SDKSecretMatch, error) {
-	// Use helm.sh/chart label (confirmed present on SDK secrets) rather than
-	// app.kubernetes.io/managed-by which may not be on all secrets.
 	secrets, err := clientset.CoreV1().Secrets("").List(ctx, metav1.ListOptions{
 		LabelSelector: "helm.sh/chart",
 	})
@@ -259,41 +265,10 @@ func FindAllSDKCredentialsWithClient(ctx context.Context, clientset kubernetes.I
 
 	var matches []SDKSecretMatch
 	for _, s := range secrets.Items {
-		chartLabel := s.Labels["helm.sh/chart"]
-		if !strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
-			continue
+		if m := matchSecretToSDK(s); m != nil {
+			matches = append(matches, *m)
 		}
-
-		licenseID, err := extractLicenseID(s.Data, s.Name, s.Namespace)
-		if err != nil {
-			continue
-		}
-
-		channelID, endpoint, err := extractConfigFields(s.Data)
-		if err != nil {
-			continue
-		}
-
-		if endpoint == "" {
-			endpoint = defaultReplicatedAppEndpoint
-		}
-
-		if err := validateEndpoint(endpoint); err != nil {
-			continue
-		}
-
-		matches = append(matches, SDKSecretMatch{
-			SecretName: s.Name,
-			Namespace:  s.Namespace,
-			AppSlug:    s.Labels["app.kubernetes.io/instance"],
-			Creds: &ReplicatedUploadCredentials{
-				LicenseID: licenseID,
-				ChannelID: channelID,
-				Endpoint:  strings.TrimRight(endpoint, "/"),
-			},
-		})
 	}
-
 	return matches, nil
 }
 
