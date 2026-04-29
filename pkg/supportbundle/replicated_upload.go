@@ -22,11 +22,16 @@ import (
 
 const (
 	defaultReplicatedAppEndpoint = "https://replicated.app"
-	replicatedSecretName         = "replicated"
-	replicatedConfigKey          = "config.yaml"
-	s3UploadTimeout              = 30 * time.Minute
-	apiRequestTimeout            = 30 * time.Second
-	maxErrorResponseBytes        = 1024 * 1024 // 1 MB
+	// replicatedSDKChartLabelPrefix is the prefix for the helm.sh/chart label on SDK secrets.
+	// The full label value is "replicated-{VERSION}" (e.g., "replicated-1.18.2").
+	replicatedSDKChartLabelPrefix = "replicated-"
+	// integrationLicenseIDKey is the secret key for the license ID set by the SDK chart.
+	integrationLicenseIDKey = "integration-license-id"
+	// replicatedConfigKey is the secret key for the full SDK config YAML.
+	replicatedConfigKey = "config.yaml"
+	s3UploadTimeout     = 30 * time.Minute
+	apiRequestTimeout   = 30 * time.Second
+	maxErrorResponseBytes = 1024 * 1024 // 1 MB
 )
 
 // ReplicatedConfig represents the config.yaml stored in the replicated Secret.
@@ -69,48 +74,75 @@ type markUploadedResponse struct {
 	Slug string `json:"slug"`
 }
 
-// DiscoverReplicatedCredentials reads the replicated Secret from the cluster
-// and extracts the license ID, channel ID, and endpoint needed for upload.
-// If secretName is empty, it defaults to "replicated".
+// DiscoverReplicatedCredentials discovers the Replicated SDK secret and extracts
+// the license ID, channel ID, and endpoint needed for upload.
 //
-// Requires RBAC: the service account must have `get` permission on `secrets`
-// in the target namespace.
+// Discovery strategy:
+//  1. If secretName is provided, look up that specific secret.
+//  2. Otherwise, discover the SDK secret by listing secrets with the label
+//     "helm.sh/chart" prefixed with "replicated-" (the SDK Helm chart).
+//
+// The secret name follows the SDK chart naming convention: {APP_NAME}-sdk
+// (e.g., "k8laude-sdk" for an app named "k8laude").
+//
+// License ID extraction:
+//  1. Try the "integration-license-id" key first (direct string value).
+//  2. Fall back to parsing "config.yaml" and extracting license.spec.licenseID.
+//
+// Requires RBAC: the service account must have `get` and `list` permissions
+// on `secrets` in the target namespace.
 func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config, namespace string, secretName string) (*ReplicatedUploadCredentials, error) {
-	name := replicatedSecretName
-	if secretName != "" {
-		name = secretName
-	}
-
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "create kubernetes clientset")
 	}
 
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+	var secretData map[string][]byte
+	var resolvedName string
+
+	if secretName != "" {
+		// Explicit secret name provided — look it up directly
+		secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrapf(err, "get secret %s/%s", namespace, secretName)
+		}
+		secretData = secret.Data
+		resolvedName = secretName
+	} else {
+		// Discover the SDK secret by label
+		secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/managed-by=Helm",
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "list secrets in namespace %s", namespace)
+		}
+
+		for _, s := range secrets.Items {
+			chartLabel := s.Labels["helm.sh/chart"]
+			if strings.HasPrefix(chartLabel, replicatedSDKChartLabelPrefix) {
+				secretData = s.Data
+				resolvedName = s.Name
+				break
+			}
+		}
+
+		if secretData == nil {
+			return nil, fmt.Errorf("no Replicated SDK secret found in namespace %s (looked for helm.sh/chart label with prefix %q)", namespace, replicatedSDKChartLabelPrefix)
+		}
+	}
+
+	// Extract license ID: try integration-license-id key first, fall back to config.yaml
+	licenseID, err := extractLicenseID(secretData, resolvedName, namespace)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get secret %s/%s", namespace, name)
+		return nil, err
 	}
 
-	configData, ok := secret.Data[replicatedConfigKey]
-	if !ok {
-		return nil, fmt.Errorf("secret %s/%s does not contain key %q", namespace, name, replicatedConfigKey)
+	// Extract channel ID and endpoint from config.yaml
+	channelID, endpoint, err := extractConfigFields(secretData)
+	if err != nil {
+		return nil, err
 	}
 
-	var config ReplicatedConfig
-	if err := yaml.Unmarshal(configData, &config); err != nil {
-		return nil, errors.Wrap(err, "unmarshal replicated config")
-	}
-
-	if config.License == nil {
-		return nil, fmt.Errorf("replicated config does not contain a license")
-	}
-
-	licenseID := config.License.Spec.LicenseID
-	if licenseID == "" {
-		return nil, fmt.Errorf("license ID is empty in replicated config")
-	}
-
-	endpoint := config.ReplicatedAppEndpoint
 	if endpoint == "" {
 		endpoint = defaultReplicatedAppEndpoint
 	}
@@ -121,9 +153,61 @@ func DiscoverReplicatedCredentials(ctx context.Context, restConfig *rest.Config,
 
 	return &ReplicatedUploadCredentials{
 		LicenseID: licenseID,
-		ChannelID: config.ChannelID,
+		ChannelID: channelID,
 		Endpoint:  strings.TrimRight(endpoint, "/"),
 	}, nil
+}
+
+// extractLicenseID tries the integration-license-id key first, then falls back
+// to parsing config.yaml for the license ID.
+func extractLicenseID(data map[string][]byte, secretName, namespace string) (string, error) {
+	// Try the direct integration key first
+	if licenseBytes, ok := data[integrationLicenseIDKey]; ok {
+		licenseID := strings.TrimSpace(string(licenseBytes))
+		if licenseID != "" {
+			return licenseID, nil
+		}
+	}
+
+	// Fall back to config.yaml
+	configData, ok := data[replicatedConfigKey]
+	if !ok {
+		return "", fmt.Errorf("secret %s/%s contains neither %q nor %q key",
+			namespace, secretName, integrationLicenseIDKey, replicatedConfigKey)
+	}
+
+	var config ReplicatedConfig
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return "", errors.Wrap(err, "unmarshal replicated config")
+	}
+
+	if config.License == nil {
+		return "", fmt.Errorf("replicated config in secret %s/%s does not contain a license", namespace, secretName)
+	}
+
+	licenseID := config.License.Spec.LicenseID
+	if licenseID == "" {
+		return "", fmt.Errorf("license ID is empty in secret %s/%s", namespace, secretName)
+	}
+
+	return licenseID, nil
+}
+
+// extractConfigFields parses config.yaml to get channelID and endpoint.
+// Returns empty strings (not errors) if config.yaml is missing, since these
+// fields have defaults.
+func extractConfigFields(data map[string][]byte) (channelID string, endpoint string, err error) {
+	configData, ok := data[replicatedConfigKey]
+	if !ok {
+		return "", "", nil
+	}
+
+	var config ReplicatedConfig
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return "", "", errors.Wrap(err, "unmarshal replicated config for channel/endpoint")
+	}
+
+	return config.ChannelID, config.ReplicatedAppEndpoint, nil
 }
 
 // GetPresignedUploadURL calls the Replicated API to obtain a presigned S3 URL for upload.
