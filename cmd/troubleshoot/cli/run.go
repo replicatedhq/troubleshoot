@@ -101,6 +101,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
+	canPrompt := interactive // preserve original value — interactive may be mutated later
 
 	if interactive {
 		fmt.Print(cursor.Hide())
@@ -278,7 +279,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			// Discovery errors are non-fatal — we log them to stderr and move on.
 			if restConfig != nil {
 				sdkNamespace := v.GetString("sdk-namespace")
-				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug, interactive)
+				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug, canPrompt)
 				if credErr != nil {
 					fmt.Fprintf(os.Stderr, "SDK credential discovery: %v\n", credErr)
 				} else {
