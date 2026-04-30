@@ -146,6 +146,8 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, ref name.Reference, ima
 					Username: authConfig.username,
 					Password: authConfig.password,
 				}))
+			} else {
+				opts = append(opts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 			}
 
 			// Use Get (not Head) so 404 responses include a JSON body; the registry
