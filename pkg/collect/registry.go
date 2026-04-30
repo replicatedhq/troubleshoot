@@ -152,6 +152,10 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, ref name.Reference, ima
 			// API encodes MANIFEST_UNKNOWN vs NAME_UNKNOWN there, which we need to
 			// distinguish. Head 404s typically have no body, so *transport.Error has
 			// empty Errors and we cannot classify the failure.
+			//
+			// Get fetches the manifest (or list/index) for the tag or digest and does
+			// not pick a per-platform child image, so this checks presence only, not
+			// whether the image runs on a given architecture.
 			_, err := remote.Get(ref, opts...)
 			return err
 		}()
@@ -164,13 +168,6 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, ref name.Reference, ima
 
 		if stderrors.Is(err, context.DeadlineExceeded) {
 			return false, errors.Wrap(err, "failed to get image manifest")
-		}
-
-		if strings.Contains(err.Error(), "no image found in manifest list for architecture") ||
-			strings.Contains(err.Error(), "no image found in image index for architecture") {
-			// manifest was downloaded, but no matching architecture found in manifest
-			// this binary's architecture is not necessarily what will run in the cluster
-			return true, nil
 		}
 
 		if isNotFound(err) {
