@@ -3,21 +3,22 @@ package collect
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/distribution/distribution/v3/registry/api/errcode"
-	registryv2 "github.com/distribution/distribution/v3/registry/api/v2"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	imagedocker "go.podman.io/image/v5/docker"
-	dockerref "go.podman.io/image/v5/docker/reference"
-	"go.podman.io/image/v5/transports/alltransports"
-	"go.podman.io/image/v5/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -105,28 +106,26 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 	return imageExistsWithAuth(authConfig, imageRef, image, deadline)
 }
 
-func parseImageRef(image string) (types.ImageReference, error) {
-	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
+func parseImageRef(image string) (name.Reference, error) {
+	ref, err := name.ParseReference(image)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse image name %s", image)
 	}
-	return imageRef, nil
+	return ref, nil
 }
 
 // imageExistsWithAuth checks if an image exists in a registry using optional auth credentials.
 // authConfig may be nil for ambient credentials (e.g. ~/.docker/config.json).
 // This is the shared core used by both the cluster-level and host-level registry collectors.
-func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageReference, image string, deadline time.Duration) (bool, error) {
-	sysCtx := types.SystemContext{
-		DockerDisableV1Ping:         true,
-		DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
+func imageExistsWithAuth(authConfig *registryAuthConfig, ref name.Reference, image string, deadline time.Duration) (bool, error) {
+	// remote.DefaultTransport includes Proxy (HTTP_PROXY/HTTPS_PROXY), dial/TLS
+	// timeouts, and keepalive; clone it so InsecureSkipVerify does not drop those.
+	defaultTR, ok := remote.DefaultTransport.(*http.Transport)
+	if !ok {
+		return false, errors.New("remote.DefaultTransport is not *http.Transport")
 	}
-	if authConfig != nil {
-		sysCtx.DockerAuthConfig = &types.DockerAuthConfig{
-			Username: authConfig.username,
-			Password: authConfig.password,
-		}
-	}
+	insecureTransport := defaultTR.Clone()
+	insecureTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec
 
 	if deadline == 0 {
 		deadline = 10 * time.Second
@@ -137,12 +136,30 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageRef
 		err := func() error {
 			ctx, cancel := context.WithTimeout(context.Background(), deadline)
 			defer cancel()
-			remoteImage, err := imageRef.NewImage(ctx, &sysCtx)
-			if err != nil {
-				return err
+
+			opts := []remote.Option{
+				remote.WithContext(ctx),
+				remote.WithTransport(insecureTransport),
 			}
-			remoteImage.Close()
-			return nil
+			if authConfig != nil {
+				opts = append(opts, remote.WithAuth(&authn.Basic{
+					Username: authConfig.username,
+					Password: authConfig.password,
+				}))
+			} else {
+				opts = append(opts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+			}
+
+			// Use Get (not Head) so 404 responses include a JSON body; the registry
+			// API encodes MANIFEST_UNKNOWN vs NAME_UNKNOWN there, which we need to
+			// distinguish. Head 404s typically have no body, so *transport.Error has
+			// empty Errors and we cannot classify the failure.
+			//
+			// Get fetches the manifest (or list/index) for the tag or digest and does
+			// not pick a per-platform child image, so this checks presence only, not
+			// whether the image runs on a given architecture.
+			_, err := remote.Get(ref, opts...)
+			return err
 		}()
 		if err == nil {
 			klog.V(2).Infof("image %s exists", image)
@@ -151,17 +168,8 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageRef
 
 		klog.Errorf("failed to get image %s: %v", image, err)
 
-		// if this is a context timeout, stop here so we dont run this check for too long
-		if errors.Is(err, context.DeadlineExceeded) {
+		if stderrors.Is(err, context.DeadlineExceeded) {
 			return false, errors.Wrap(err, "failed to get image manifest")
-		}
-
-		if strings.Contains(err.Error(), "no image found in manifest list for architecture") ||
-			strings.Contains(err.Error(), "no image found in image index for architecture") {
-			// manifest was downloaded, but no matching architecture found in manifest
-			// should this count as image does not exist?
-			// this binary's architecture is not necessarily what will run in the cluster
-			return true, nil
 		}
 
 		if isNotFound(err) {
@@ -180,7 +188,7 @@ func imageExistsWithAuth(authConfig *registryAuthConfig, imageRef types.ImageRef
 	return false, errors.Wrap(lastErr, "failed to retry")
 }
 
-func getImageAuthConfig(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, imageRef types.ImageReference) (*registryAuthConfig, error) {
+func getImageAuthConfig(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, imageRef name.Reference) (*registryAuthConfig, error) {
 	if registryCollector.ImagePullSecrets == nil {
 		return nil, nil
 	}
@@ -211,13 +219,13 @@ func getImageAuthConfig(namespace string, clientConfig *rest.Config, registryCol
 	return nil, errors.New("image pull secret spec is not valid")
 }
 
-func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets) (*registryAuthConfig, error) {
+func getImageAuthConfigFromData(imageRef name.Reference, pullSecrets *v1beta2.ImagePullSecrets) (*registryAuthConfig, error) {
 	if pullSecrets.SecretType != "kubernetes.io/dockerconfigjson" {
 		return nil, errors.Errorf("secret type is not supported: %s", pullSecrets.SecretType)
 	}
 
 	configJsonBase64 := pullSecrets.Data[".dockerconfigjson"]
-	registry := dockerref.Domain(imageRef.DockerReference())
+	registry := imageRef.Context().RegistryStr()
 
 	configJson, err := base64.StdEncoding.DecodeString(configJsonBase64)
 	if err != nil {
@@ -238,8 +246,14 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 	}
 
 	auth, ok := dockerCfgJSON.Auths[registry]
+	// go-containerregistry normalizes "docker.io" to "index.docker.io"
+	// (name.DefaultRegistry); many dockerconfigjson files key on "docker.io"
+	// instead. Fall back to the alias so existing user secrets keep working.
+	if !ok && registry == name.DefaultRegistry {
+		auth, ok = dockerCfgJSON.Auths["docker.io"]
+	}
 	if !ok {
-		// Suport a mix of public and private images
+		// Support a mix of public and private images
 		return nil, nil
 	}
 
@@ -274,7 +288,7 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 	return &authConfig, nil
 }
 
-func getImageAuthConfigFromSecret(clientConfig *rest.Config, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*registryAuthConfig, error) {
+func getImageAuthConfigFromSecret(clientConfig *rest.Config, imageRef name.Reference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*registryAuthConfig, error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(clientConfig)
@@ -303,30 +317,28 @@ func getImageAuthConfigFromSecret(clientConfig *rest.Config, imageRef types.Imag
 	return config, nil
 }
 
+// isNotFound returns true only when the registry reports MANIFEST_UNKNOWN: the
+// repository exists but the tag or digest has no manifest. A 404 with
+// NAME_UNKNOWN (repository missing) is not "not found" in that sense; callers
+// should see the error to diagnose a wrong image path. Unstructured 404s
+// (e.g. empty body on HEAD) are not treated as a known-missing image.
 func isNotFound(err error) bool {
-	switch err := err.(type) {
-	case errcode.Errors:
-		for _, e := range err {
-			if isNotFound(e) {
-				return true
-			}
-		}
-		return false
-	case errcode.Error:
-		return err.Message == registryv2.ErrorCodeManifestUnknown.Message()
-	}
-
-	// this type will cause panic when compared to error type
-	if _, ok := err.(imagedocker.ErrUnauthorizedForCredentials); ok {
+	var terr *transport.Error
+	if !stderrors.As(err, &terr) || terr.StatusCode != http.StatusNotFound {
 		return false
 	}
-
-	cause := errors.Cause(err)
-	if cause, ok := cause.(error); ok {
-		if cause == err {
+	if len(terr.Errors) == 0 {
+		return false
+	}
+	for _, d := range terr.Errors {
+		if d.Code == transport.NameUnknownErrorCode {
 			return false
 		}
 	}
-
-	return isNotFound(cause)
+	for _, d := range terr.Errors {
+		if d.Code == transport.ManifestUnknownErrorCode {
+			return true
+		}
+	}
+	return false
 }
