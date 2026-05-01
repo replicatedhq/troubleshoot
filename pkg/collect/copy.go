@@ -98,11 +98,14 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 		return nil, nil, errors.Wrap(err, "failed to add runtime scheme")
 	}
 
+	// Stdin must be false because StreamOptions.Stdin is nil below.
+	// A mismatch causes the SPDY fallback (after WebSocket fails on RBAC)
+	// to hang: the API server opens a stdin stream but never receives EOF.
 	parameterCodec := runtime.NewParameterCodec(scheme)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Command:   command,
 		Container: containerName,
-		Stdin:     true,
+		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
