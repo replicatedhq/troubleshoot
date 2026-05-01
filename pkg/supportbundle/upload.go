@@ -80,7 +80,7 @@ func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlu
 	appSlug := providedAppSlug
 	if appSlug == "" {
 		if extractedAppSlug == "" {
-			return errors.New("could not determine app slug from bundle. Please provide --app-slug")
+			return errors.New("could not determine app slug from bundle. Please provide --app")
 		}
 		appSlug = extractedAppSlug
 	}

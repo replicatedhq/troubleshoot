@@ -26,7 +26,7 @@ Examples:
   support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID
 
   # Specify both license and app
-  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID --app-slug my-app
+  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID --app my-app
 
   # Upload to a custom domain (e.g., development environment)
   support-bundle upload bundle.tar.gz --upload-domain replicated-app-dev.example.com`,
@@ -41,7 +41,10 @@ Examples:
 
 			// Get upload parameters
 			licenseID := v.GetString("license-id")
-			appSlug := v.GetString("app-slug")
+			appSlug := v.GetString("app")
+			if appSlug == "" {
+				appSlug = v.GetString("app-slug") // backwards compat
+			}
 			uploadDomain := v.GetString("upload-domain")
 
 			// Use auto-detection for uploads
@@ -54,7 +57,9 @@ Examples:
 	}
 
 	cmd.Flags().String("license-id", "", "license ID for authentication (auto-detected from bundle if not provided)")
-	cmd.Flags().String("app-slug", "", "application slug (auto-detected from bundle if not provided)")
+	cmd.Flags().String("app", "", "application slug, consistent with replicated CLI (auto-detected if not provided)")
+	cmd.Flags().String("app-slug", "", "application slug (alias for --app)")
+	cmd.Flags().MarkHidden("app-slug")
 	cmd.Flags().String("upload-domain", "", "custom domain for upload (default: replicated.app)")
 
 	return cmd

@@ -1,0 +1,123 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: upload-to-replicated-example
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  afterCollection:
+    # Upload the support bundle to the Replicated vendor portal using
+    # presigned S3 URLs. Credentials are auto-discovered from the live
+    # cluster by reading the Replicated SDK Kubernetes Secret (NOT from
+    # inside the bundle archive).
+    #
+    # SDK secret discovery:
+    #   - Found by the label helm.sh/chart with prefix "replicated-"
+    #   - The secret name follows {APP_NAME}-sdk (e.g., "firstresponse-sdk")
+    #   - The license ID is read from the "config.yaml" key in the secret
+    #
+    # RBAC: The service account needs "get" and "list" on secrets in the
+    # target namespace (or cluster-wide for cross-namespace discovery).
+    - uploadToReplicated: {}
+
+---
+# Example with explicit overrides (optional):
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: upload-to-replicated-custom
+spec:
+  collectors:
+    - clusterInfo: {}
+  afterCollection:
+    - uploadToReplicated:
+        # Override if the SDK secret has a non-standard name
+        secretName: "myapp-sdk"
+        # Override if the SDK secret is in a different namespace
+        secretNamespace: "app-namespace"
+        # Override the Replicated API endpoint (must be HTTPS)
+        endpoint: "https://replicated.app"
+
+---
+# CLI usage with --auto-upload (no spec changes needed):
+#
+#   # Basic auto-upload (discovers SDK secret automatically):
+#   support-bundle --auto-upload spec.yaml
+#
+#   # If multiple apps are installed, specify which one:
+#   support-bundle --auto-upload --app=firstresponse spec.yaml
+#
+#   # If SDK is in a known namespace:
+#   support-bundle --auto-upload --sdk-namespace=firstresponse spec.yaml
+#
+#   # With explicit license ID (skips SDK discovery entirely):
+#   support-bundle --auto-upload --license-id=<id> --app=<slug> spec.yaml
+#
+# How --auto-upload discovers credentials:
+#   1. Try extracting license from inside the bundle archive (legacy path)
+#   2. Query the Kubernetes API for the SDK secret:
+#      a. Search --sdk-namespace if provided
+#      b. Otherwise search --namespace (or "default")
+#      c. Fall back to searching ALL namespaces
+#   3. If multiple SDK secrets are found (multiple apps in the same
+#      namespace, or across namespaces), prompt the user to select
+#      which app to upload for (interactive terminal) or list them
+#      and suggest --sdk-namespace (CI/non-interactive)
+#   4. If none found, show hints for --sdk-namespace or --license-id
+#
+# Upload errors are non-fatal: they are logged to stderr but never
+# affect the support bundle collection or its contents. The bundle
+# is always saved locally regardless of upload outcome.
+
+---
+# RBAC required for the support bundle service account:
+#
+# For single-namespace discovery (--sdk-namespace or same namespace):
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: support-bundle-replicated-upload
+  namespace: app-namespace
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: support-bundle-replicated-upload
+  namespace: app-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: support-bundle-replicated-upload
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app-namespace
+
+---
+# For cross-namespace discovery (searching all namespaces):
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: support-bundle-replicated-upload
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-bundle-replicated-upload
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: support-bundle-replicated-upload
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default

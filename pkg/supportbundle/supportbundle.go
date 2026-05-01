@@ -245,7 +245,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 
-	fileUploaded, err := ProcessSupportBundleAfterCollection(spec, filename)
+	fileUploaded, err := ProcessSupportBundleAfterCollectionWithConfig(spec, filename, opts.KubernetesRestConfig, opts.Namespace)
 	if err != nil {
 		if opts.FromCLI {
 			c := color.New(color.FgHiRed)
@@ -287,12 +287,27 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 
 // ProcessSupportBundleAfterCollection performs the after collection actions, like Callbacks and sending the archive to a remote server.
 func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundleSpec, archivePath string) (bool, error) {
+	return ProcessSupportBundleAfterCollectionWithConfig(spec, archivePath, nil, "")
+}
+
+// ProcessSupportBundleAfterCollectionWithConfig performs after-collection actions with optional
+// Kubernetes config for in-cluster operations like Replicated presigned URL uploads.
+func ProcessSupportBundleAfterCollectionWithConfig(spec *troubleshootv1beta2.SupportBundleSpec, archivePath string, restConfig *rest.Config, namespace string) (bool, error) {
 	fileUploaded := false
 	if len(spec.AfterCollection) > 0 {
 		for _, ac := range spec.AfterCollection {
 			if ac.UploadResultsTo != nil {
 				if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
 					return false, errors.Wrap(err, "failed to upload support bundle")
+				} else {
+					fileUploaded = true
+				}
+			} else if ac.UploadToReplicated != nil {
+				if restConfig == nil {
+					return false, errors.New("kubernetes rest config is required for uploadToReplicated")
+				}
+				if err := uploadToReplicated(ac.UploadToReplicated, archivePath, restConfig, namespace); err != nil {
+					return false, errors.Wrap(err, "failed to upload support bundle to Replicated")
 				} else {
 					fileUploaded = true
 				}
@@ -422,6 +437,39 @@ func printTokenizationStats(stats redact.RedactionStats) {
 			fmt.Printf("    %s: %d secrets\n", file, fileStats.SecretsFound)
 		}
 	}
+}
+
+func uploadToReplicated(spec *troubleshootv1beta2.UploadToReplicatedSpec, archivePath string, restConfig *rest.Config, namespace string) error {
+	ctx := context.Background()
+
+	secretNamespace := namespace
+	if spec.SecretNamespace != "" {
+		secretNamespace = spec.SecretNamespace
+	}
+	if secretNamespace == "" {
+		secretNamespace = "default"
+	}
+
+	creds, err := DiscoverReplicatedCredentials(ctx, restConfig, secretNamespace, spec.SecretName)
+	if err != nil {
+		return errors.Wrap(err, "discover replicated credentials")
+	}
+
+	// Allow spec-level endpoint override
+	if spec.Endpoint != "" {
+		if err := validateEndpoint(spec.Endpoint); err != nil {
+			return errors.Wrap(err, "invalid endpoint override")
+		}
+		creds.Endpoint = strings.TrimRight(spec.Endpoint, "/")
+	}
+
+	slug, err := UploadSupportBundleToReplicated(creds, archivePath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Support bundle uploaded to Replicated (slug: %s)\n", slug)
+	return nil
 }
 
 // AnalyzeSupportBundle performs analysis on a support bundle using the support bundle spec and an already unpacked support

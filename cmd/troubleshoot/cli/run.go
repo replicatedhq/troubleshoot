@@ -16,6 +16,7 @@ import (
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
@@ -100,6 +101,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
+	canPrompt := interactive // preserve original value — interactive may be mutated later
 
 	if interactive {
 		fmt.Print(cursor.Hide())
@@ -263,7 +265,10 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Attempt auto-upload before any early returns
 	if v.GetBool("auto-upload") && !response.FileUploaded {
 		licenseID := v.GetString("license-id")
-		appSlug := v.GetString("app-slug")
+		appSlug := v.GetString("app")
+		if appSlug == "" {
+			appSlug = v.GetString("app-slug") // backwards compat
+		}
 		uploadDomain := v.GetString("upload-domain")
 
 		targetDomain := uploadDomain
@@ -273,8 +278,32 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to %s...\n", targetDomain)
 		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug, uploadDomain); err != nil {
-			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
-			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+			fmt.Fprintf(os.Stderr, "Bundle-based upload failed: %v\n", err)
+			// Fallback: try the presigned URL flow using in-cluster SDK credentials.
+			// Discovery errors are non-fatal — we log them to stderr and move on.
+			if restConfig != nil {
+				sdkNamespace := v.GetString("sdk-namespace")
+				creds, credErr := discoverSDKCredentials(ctx, restConfig, sdkNamespace, v.GetString("namespace"), appSlug, canPrompt)
+				if credErr != nil {
+					fmt.Fprintf(os.Stderr, "SDK credential discovery: %v\n", credErr)
+				} else {
+					fmt.Fprintf(os.Stderr, "Uploading via Replicated SDK presigned URL...\n")
+					slug, uploadErr := supportbundle.UploadSupportBundleToReplicated(creds, response.ArchivePath)
+					if uploadErr != nil {
+						fmt.Fprintf(os.Stderr, "Presigned URL upload failed: %v\n", uploadErr)
+					} else {
+						fmt.Fprintf(os.Stderr, "Support bundle uploaded to Replicated (slug: %s)\n", slug)
+						response.FileUploaded = true
+					}
+				}
+			}
+
+			if !response.FileUploaded {
+				fmt.Fprintf(os.Stderr, "Auto-upload: could not upload bundle automatically.\n")
+				fmt.Fprintf(os.Stderr, "To upload without regenerating, run:\n")
+				fmt.Fprintf(os.Stderr, "  support-bundle upload %s --app=<slug>\n", response.ArchivePath)
+				fmt.Fprintf(os.Stderr, "Hint: try --app=<slug>, --sdk-namespace=<namespace>, or --license-id=<id>\n")
+			}
 		} else {
 			response.FileUploaded = true
 		}
@@ -489,6 +518,109 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	mainBundle.Spec.HostAnalyzers = util.Dedup(mainBundle.Spec.HostAnalyzers)
 
 	return mainBundle, additionalRedactors, nil
+}
+
+// discoverSDKCredentials attempts to find the Replicated SDK credentials.
+// If appSlug is provided, it filters by app slug to skip the prompt.
+// Strategy:
+//  1. If sdkNamespace is explicitly provided, search only that namespace.
+//  2. Otherwise, try the collector namespace first.
+//  3. If not found, search all namespaces.
+//  4. If multiple found, filter by appSlug or prompt the user.
+//
+// All failures are returned as errors but should be treated as non-fatal by callers.
+func discoverSDKCredentials(ctx context.Context, restConfig *rest.Config, sdkNamespace, collectorNamespace, appSlug string, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if sdkNamespace != "" {
+		creds, err := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, sdkNamespace, "")
+		if err != nil {
+			var multiErr *supportbundle.MultipleSDKSecretsError
+			if errors.As(err, &multiErr) {
+				return resolveMultipleMatches(multiErr.Matches, appSlug, interactive)
+			}
+		}
+		return creds, err
+	}
+
+	// Try the collector namespace first
+	ns := collectorNamespace
+	if ns == "" {
+		ns = "default"
+	}
+	creds, err := supportbundle.DiscoverReplicatedCredentials(ctx, restConfig, ns, "")
+	if err == nil {
+		return creds, nil
+	}
+
+	// If multiple SDK secrets were found in the same namespace, try app-slug filter
+	var multiErr *supportbundle.MultipleSDKSecretsError
+	if errors.As(err, &multiErr) {
+		return resolveMultipleMatches(multiErr.Matches, appSlug, interactive)
+	}
+
+	// Fallback: search all namespaces
+	fmt.Fprintf(os.Stderr, "SDK secret not found in namespace %q, searching all namespaces...\n", ns)
+	matches, searchErr := supportbundle.FindAllSDKCredentials(ctx, restConfig)
+	if searchErr != nil {
+		fmt.Fprintf(os.Stderr, "Could not search all namespaces (may need cluster-wide RBAC): %v\n", searchErr)
+		return nil, searchErr
+	}
+
+	switch len(matches) {
+	case 0:
+		return nil, fmt.Errorf("no Replicated SDK secret found in any namespace")
+	case 1:
+		m := matches[0]
+		fmt.Fprintf(os.Stderr, "Found SDK secret %s/%s\n", m.Namespace, m.SecretName)
+		return m.Creds, nil
+	default:
+		return resolveMultipleMatches(matches, appSlug, interactive)
+	}
+}
+
+// resolveMultipleMatches handles the case where multiple SDK secrets are found.
+// If appSlug is provided, filter to the matching one. Otherwise prompt (interactive)
+// or error with hints (non-interactive).
+func resolveMultipleMatches(matches []supportbundle.SDKSecretMatch, appSlug string, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if appSlug != "" {
+		if m := supportbundle.FilterByAppSlug(matches, appSlug); m != nil {
+			fmt.Fprintf(os.Stderr, "Using SDK secret %s/%s (app: %s)\n", m.Namespace, m.SecretName, m.AppSlug)
+			return m.Creds, nil
+		}
+		return nil, fmt.Errorf("no SDK secret found matching --app=%q", appSlug)
+	}
+	return promptForSDKSecret(matches, interactive)
+}
+
+// promptForSDKSecret presents the user with a list of discovered SDK secrets
+// and returns the credentials for the one they select.
+func promptForSDKSecret(matches []supportbundle.SDKSecretMatch, interactive bool) (*supportbundle.ReplicatedUploadCredentials, error) {
+	if !interactive || !isatty.IsTerminal(os.Stdin.Fd()) {
+		return supportbundle.PromptForSDKSecret(matches)
+	}
+
+	items := make([]string, len(matches))
+	for i, m := range matches {
+		if m.AppSlug != "" {
+			items[i] = fmt.Sprintf("%s (namespace: %s)", m.AppSlug, m.Namespace)
+		} else {
+			items[i] = fmt.Sprintf("%s/%s", m.Namespace, m.SecretName)
+		}
+	}
+
+	prompt := promptui.Select{
+		Label:  "Multiple Replicated apps found. Select which app to upload for",
+		Items:  items,
+		Stdout: os.Stderr,
+	}
+
+	idx, _, err := prompt.Run()
+	if err != nil {
+		return nil, fmt.Errorf("selection cancelled")
+	}
+
+	selected := matches[idx]
+	fmt.Fprintf(os.Stderr, "Using SDK secret %s/%s\n", selected.Namespace, selected.SecretName)
+	return selected.Creds, nil
 }
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {

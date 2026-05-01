@@ -27,8 +27,42 @@ type ResultRequest struct {
 }
 
 type AfterCollection struct {
-	UploadResultsTo *ResultRequest `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
-	Callback        *ResultRequest `json:"callback,omitempty" yaml:"callback,omitempty"`
+	UploadResultsTo    *ResultRequest          `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
+	Callback           *ResultRequest          `json:"callback,omitempty" yaml:"callback,omitempty"`
+	UploadToReplicated *UploadToReplicatedSpec `json:"uploadToReplicated,omitempty" yaml:"uploadToReplicated,omitempty"`
+}
+
+// UploadToReplicatedSpec configures uploading support bundles to the Replicated
+// vendor portal via presigned S3 URLs. Credentials are auto-discovered from the
+// live cluster by reading the Replicated SDK Kubernetes Secret.
+//
+// SDK secret discovery:
+//   - Found by the label helm.sh/chart with prefix "replicated-"
+//   - Name follows the convention {APP_NAME}-sdk (e.g., "firstresponse-sdk")
+//   - License ID is read from the "config.yaml" key in the secret data
+//   - Falls back to "integration-license-id" key if config.yaml is absent
+//
+// Upload flow:
+//  1. Get a presigned S3 URL from POST /v3/supportbundle/upload-url
+//  2. PUT the bundle archive directly to S3
+//  3. Notify the API via POST /v3/supportbundle/{bundleID}/uploaded
+//
+// RBAC: The service account needs "get" and "list" on secrets in the target
+// namespace, or cluster-wide for cross-namespace discovery.
+// See examples/support-bundle/upload-to-replicated.yaml for a complete example.
+type UploadToReplicatedSpec struct {
+	// SecretName overrides the auto-discovered SDK secret name.
+	// By default, the secret is found by its helm.sh/chart label.
+	// +optional
+	SecretName string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
+	// SecretNamespace overrides the namespace to look for the SDK secret.
+	// Defaults to the namespace troubleshoot is running in.
+	// +optional
+	SecretNamespace string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
+	// Endpoint overrides the Replicated API endpoint. Must use HTTPS.
+	// Defaults to the value from the SDK secret, or https://replicated.app.
+	// +optional
+	Endpoint string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 }
 
 // CollectorSpec defines the desired state of Collector
