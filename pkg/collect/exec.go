@@ -129,10 +129,13 @@ func getExecOutputs(
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
+	// Stdin must be false because StreamOptions.Stdin is nil below.
+	// A mismatch causes the SPDY fallback (after WebSocket fails on RBAC)
+	// to hang: the API server opens a stdin stream but never receives EOF.
 	req.VersionedParams(&corev1.PodExecOptions{
 		Command:   append(execCollector.Command, execCollector.Args...),
 		Container: container,
-		Stdin:     true,
+		Stdin:     false,
 		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,

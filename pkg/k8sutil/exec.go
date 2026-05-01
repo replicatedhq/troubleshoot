@@ -3,9 +3,9 @@ package k8sutil
 import (
 	"net/url"
 
-	"k8s.io/apimachinery/pkg/util/httpstream"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/streaming/pkg/httpstream"
 )
 
 // NewFallbackExecutor creates an executor that tries WebSocket first and falls
@@ -21,8 +21,7 @@ func NewFallbackExecutor(config *restclient.Config, u *url.URL) (remotecommand.E
 	if err != nil {
 		return nil, err
 	}
-	shouldFallback := func(err error) bool {
+	return remotecommand.NewFallbackExecutor(wsExec, spdyExec, func(err error) bool {
 		return httpstream.IsUpgradeFailure(err) || httpstream.IsHTTPSProxyError(err)
-	}
-	return remotecommand.NewFallbackExecutor(wsExec, spdyExec, shouldFallback)
+	})
 }

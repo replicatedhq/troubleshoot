@@ -529,7 +529,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace:   pickNamespaceOrDefault(c.Exec.Namespace, overrideNS),
-				Verb:        "get",
+				Verb:        "create",
 				Group:       "",
 				Version:     "",
 				Resource:    "pods",
@@ -554,7 +554,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace:   pickNamespaceOrDefault(c.Copy.Namespace, overrideNS),
-				Verb:        "get",
+				Verb:        "create",
 				Group:       "",
 				Version:     "",
 				Resource:    "pods",
