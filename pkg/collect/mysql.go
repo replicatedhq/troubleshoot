@@ -38,25 +38,18 @@ func (c *CollectMysql) createConnectConfig() (*mysql.Config, error) {
 		return nil, errors.New("mysql uri cannot be empty")
 	}
 
+	cfg, err := mysql.ParseDSN(c.Collector.URI)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse mysql config")
+	}
+
 	if c.Collector.TLS != nil {
 		klog.V(2).Infof("Connecting to mysql with TLS client config")
 		tlsConfig, err := createTLSConfig(c.Context, c.Client, c.Collector.TLS)
 		if err != nil {
 			return nil, err
 		}
-
-		cfg, err := mysql.ParseDSN(c.Collector.URI)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse mysql config")
-		}
-
 		cfg.TLS = tlsConfig
-		return cfg, nil
-	}
-
-	cfg, err := mysql.ParseDSN(c.Collector.URI)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse mysql config")
 	}
 
 	return cfg, nil
