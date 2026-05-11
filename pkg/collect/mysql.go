@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type CollectMysql struct {
@@ -32,11 +33,65 @@ func (c *CollectMysql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-	databaseConnection := DatabaseConnection{}
+func (c *CollectMysql) createConnectConfig() (*mysql.Config, error) {
+	if c.Collector.URI == "" {
+		return nil, errors.New("mysql uri cannot be empty")
+	}
+
+	if c.Collector.TLS != nil {
+		klog.V(2).Infof("Connecting to mysql with TLS client config")
+		tlsConfig, err := createTLSConfig(c.Context, c.Client, c.Collector.TLS)
+		if err != nil {
+			return nil, err
+		}
+
+		cfg, err := mysql.ParseDSN(c.Collector.URI)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse mysql config")
+		}
+
+		cfg.TLS = tlsConfig
+		return cfg, nil
+	}
+
+	cfg, err := mysql.ParseDSN(c.Collector.URI)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse mysql config")
+	}
+
+	return cfg, nil
+}
+
+func (c *CollectMysql) connect() (*sql.DB, error) {
+	cfg, err := c.createConnectConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if c.Collector.TLS != nil {
+		connector, err := mysql.NewConnector(cfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create mysql connector")
+		}
+
+		db := sql.OpenDB(connector)
+		return db, nil
+	}
 
 	db, err := sql.Open("mysql", c.Collector.URI)
 	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	databaseConnection := DatabaseConnection{}
+
+	db, err := c.connect()
+	if err != nil {
+		klog.V(2).Infof("MySQL connection error: %s", err.Error())
 		databaseConnection.Error = err.Error()
 	} else {
 		defer db.Close()
