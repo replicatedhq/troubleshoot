@@ -47,9 +47,9 @@ func TestCollectMysql_createConnectConfigPlainText(t *testing.T) {
 			cfg, err := c.createConnectConfig()
 			assert.Equal(t, tt.hasError, err != nil)
 			if err == nil {
-			require.NotNil(t, cfg)
-			assert.Equal(t, "localhost:3306", cfg.Addr)
-			assert.Equal(t, "defaultdb", cfg.DBName)
+				require.NotNil(t, cfg)
+				assert.Equal(t, "localhost:3306", cfg.Addr)
+				assert.Equal(t, "defaultdb", cfg.DBName)
 			} else {
 				t.Log(err)
 				assert.Nil(t, cfg)
@@ -116,6 +116,26 @@ func TestCollectMysql_createConnectConfigTLSSkipVerify(t *testing.T) {
 	assert.NotNil(t, cfg)
 	require.NotNil(t, cfg.TLS)
 	assert.True(t, cfg.TLS.InsecureSkipVerify)
+}
+
+func TestCollectMysql_createConnectConfigTLSCACertOnly(t *testing.T) {
+	c := &CollectMysql{
+		Context: context.Background(),
+		Collector: &v1beta2.Database{
+			URI: "user:password@tcp(localhost:3306)/defaultdb",
+			TLS: &v1beta2.TLSParams{
+				CACert: testutils.GetTestFixture(t, "db/ca.pem"),
+			},
+		},
+	}
+
+	cfg, err := c.createConnectConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	require.NotNil(t, cfg.TLS)
+	assert.NotNil(t, cfg.TLS.RootCAs)
+	assert.Empty(t, cfg.TLS.Certificates)
+	assert.False(t, cfg.TLS.InsecureSkipVerify)
 }
 
 func TestCollectMysql_createConnectConfigTLSSecret(t *testing.T) {
