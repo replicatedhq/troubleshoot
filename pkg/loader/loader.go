@@ -386,6 +386,9 @@ func v1beta3SpecRequiresClient(spec *troubleshootv1beta3.SupportBundleSpec) bool
 		if c.Redis != nil && databaseRequiresClient(c.Redis) {
 			return true
 		}
+		if c.ClickHouse != nil && databaseRequiresClient(c.ClickHouse) {
+			return true
+		}
 	}
 
 	return false

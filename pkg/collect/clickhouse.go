@@ -81,7 +81,6 @@ func (c *CollectClickhouse) Collect(progressChan chan<- interface{}) (CollectorR
 		if err := conn.Ping(c.Context); err != nil {
 			databaseConnection.Error = err.Error()
 		} else {
-			databaseConnection.IsConnected = true
 
 			var version string
 			err := conn.QueryRow(c.Context, "SELECT version()").Scan(&version)
@@ -89,6 +88,7 @@ func (c *CollectClickhouse) Collect(progressChan chan<- interface{}) (CollectorR
 				databaseConnection.Error = err.Error()
 			} else {
 				databaseConnection.Version = version
+				databaseConnection.IsConnected = true
 			}
 		}
 	}

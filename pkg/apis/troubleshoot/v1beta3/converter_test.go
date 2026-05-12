@@ -171,7 +171,17 @@ func TestConvertToV1Beta2WithResolution_MultipleDatabases(t *testing.T) {
 		},
 	}
 
-	client := fake.NewSimpleClientset(pgSecret, mysqlSecret, redisSecret)
+	clickhouseSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "clickhouse-secret",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			"uri": []byte("http://clickhouse.example.com:9000"),
+		},
+	}
+
+	client := fake.NewSimpleClientset(pgSecret, mysqlSecret, redisSecret, clickhouseSecret)
 
 	v3spec := &SupportBundleSpec{
 		Collectors: []*Collect{
@@ -211,13 +221,25 @@ func TestConvertToV1Beta2WithResolution_MultipleDatabases(t *testing.T) {
 					},
 				},
 			},
+			{
+				ClickHouse: &Database{
+					URI: StringOrValueFrom{
+						ValueFrom: &ValueFromSource{
+							SecretKeyRef: &SecretKeyRef{
+								Name: "clickhouse-secret",
+								Key:  "uri",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
 	v2spec, err := ConvertToV1Beta2WithResolution(context.Background(), v3spec, client, "default")
 	require.NoError(t, err)
 	require.NotNil(t, v2spec)
-	require.Len(t, v2spec.Collectors, 3)
+	require.Len(t, v2spec.Collectors, 4)
 
 	require.NotNil(t, v2spec.Collectors[0].Postgres)
 	assert.Equal(t, "postgresql://user:pass@pg.example.com:5432/db", v2spec.Collectors[0].Postgres.URI)
@@ -227,6 +249,8 @@ func TestConvertToV1Beta2WithResolution_MultipleDatabases(t *testing.T) {
 
 	require.NotNil(t, v2spec.Collectors[2].Redis)
 	assert.Equal(t, "redis://redis.example.com:6379", v2spec.Collectors[2].Redis.URI)
+	require.NotNil(t, v2spec.Collectors[3].ClickHouse)
+	assert.Equal(t, "http://clickhouse.example.com:9000", v2spec.Collectors[3].ClickHouse.URI)
 }
 
 func TestConvertToV1Beta2WithResolution_SecretNotFound(t *testing.T) {
