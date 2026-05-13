@@ -89,7 +89,6 @@ func convertCollector(
 		v2collector.ClickHouse = db
 	}
 
-
 	// TODO: Add conversion for other collector types as v1beta3 support expands
 
 	return v2collector, nil
