@@ -68,10 +68,11 @@ type HostCollect struct {
 // For phase 1, we're focusing on Database collectors with StringOrValueFrom support
 type Collect struct {
 	// Database collectors with v1beta3 StringOrValueFrom support
-	Postgres *Database `json:"postgres,omitempty" yaml:"postgres,omitempty"`
-	Mssql    *Database `json:"mssql,omitempty" yaml:"mssql,omitempty"`
-	Mysql    *Database `json:"mysql,omitempty" yaml:"mysql,omitempty"`
-	Redis    *Database `json:"redis,omitempty" yaml:"redis,omitempty"`
+	Postgres   *Database `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mssql      *Database `json:"mssql,omitempty" yaml:"mssql,omitempty"`
+	Mysql      *Database `json:"mysql,omitempty" yaml:"mysql,omitempty"`
+	Redis      *Database `json:"redis,omitempty" yaml:"redis,omitempty"`
+	ClickHouse *Database `json:"clickhouse,omitempty" yaml:"clickhouse,omitempty"`
 
 	// TODO: Add remaining collector types as we expand v1beta3 support
 	// For now, these are placeholders to make the types compile

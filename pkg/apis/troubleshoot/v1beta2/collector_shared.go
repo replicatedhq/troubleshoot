@@ -353,6 +353,7 @@ type Collect struct {
 	Mssql                 *Database              `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql                 *Database              `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                 *Database              `json:"redis,omitempty" yaml:"redis,omitempty"`
+	ClickHouse            *Database              `json:"clickhouse,omitempty" yaml:"clickhouse,omitempty"`
 	Collectd              *Collectd              `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 	Ceph                  *Ceph                  `json:"ceph,omitempty" yaml:"ceph,omitempty"`
 	Longhorn              *Longhorn              `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
@@ -679,6 +680,10 @@ func (c *Collect) GetName() string {
 	if c.Redis != nil {
 		collector = "redis"
 		name = c.Redis.CollectorName
+	}
+	if c.ClickHouse != nil {
+		collector = "clickhouse"
+		name = c.ClickHouse.CollectorName
 	}
 	if c.Collectd != nil {
 		collector = "collectd"
