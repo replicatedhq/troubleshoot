@@ -681,6 +681,10 @@ func (c *Collect) GetName() string {
 		collector = "redis"
 		name = c.Redis.CollectorName
 	}
+	if c.ClickHouse != nil {
+		collector = "clickhouse"
+		name = c.ClickHouse.CollectorName
+	}
 	if c.Collectd != nil {
 		collector = "collectd"
 		name = c.Collectd.CollectorName
