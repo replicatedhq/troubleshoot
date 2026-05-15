@@ -1,6 +1,6 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.26.2
+go 1.26.3
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.42.0
