@@ -50,7 +50,7 @@ jobs:
   notify:
     needs: goreleaser
     if: ${{ !contains(github.ref_name, '-') }}
-    uses: replicatedhq/reusable-workflows/.github/workflows/notify-release.yml@main
+    uses: replicatedhq/reusable-workflows/.github/workflows/notify-release.yml@0432fb838fc83852b78be97a150b35991a85d56f # main
     with:
       tag: ${{ github.ref_name }}
     secrets:
