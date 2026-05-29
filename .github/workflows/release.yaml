@@ -46,3 +46,12 @@ jobs:
         uses: rajatjindal/krew-release-bot@v0.0.51
         with:
           krew_template_file: deploy/krew/support-bundle.yaml
+
+  notify:
+    needs: goreleaser
+    if: ${{ !contains(github.ref_name, '-') }}
+    uses: replicatedhq/reusable-workflows/.github/workflows/notify-release.yml@main
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      slack_webhook: ${{ secrets.RELEASE_SLACK_WEBHOOK }}
