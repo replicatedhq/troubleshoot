@@ -7,9 +7,9 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.1
-	github.com/aws/aws-sdk-go-v2 v1.41.7
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.17
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
+	github.com/aws/aws-sdk-go-v2 v1.41.11
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.21
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.103.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/govaluate v1.10.0
 	github.com/cilium/ebpf v0.21.0
@@ -26,7 +26,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/hashicorp/go-getter v1.8.6
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.22
@@ -36,7 +36,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/segmentio/ksuid v1.0.4
-	github.com/shirou/gopsutil/v4 v4.26.4
+	github.com/shirou/gopsutil/v4 v4.26.5
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -45,8 +45,8 @@ require (
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
 	github.com/vmware-tanzu/velero v1.18.1
-	go.opentelemetry.io/otel v1.43.0
-	go.opentelemetry.io/otel/sdk v1.43.0
+	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/otel/sdk v1.44.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/mod v0.36.0
 	golang.org/x/sync v0.20.0
@@ -82,22 +82,22 @@ require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.12 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.12 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.23 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.23 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.23 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.27 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.27 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.27 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.24 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.0.11 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.17 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 // indirect
-	github.com/aws/smithy-go v1.25.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.28 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.20 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.27 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.27 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.1.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.31.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.43.1 // indirect
+	github.com/aws/smithy-go v1.27.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -160,9 +160,9 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
-	go.opentelemetry.io/otel/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/tools v0.45.0 // indirect
