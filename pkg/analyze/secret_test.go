@@ -232,6 +232,25 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
+			name: "spec with neither fail nor pass outcome returns nil so framework can surface the missing-outcome error",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Misconfigured",
+				},
+				Namespace:  "default",
+				SecretName: "does-not-exist",
+				Outcomes:   []*troubleshootv1beta2.Outcome{},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/default/does-not-exist.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "default",
+					Name:         "does-not-exist",
+					SecretExists: false,
+				}),
+			},
+			want: nil,
+		},
+		{
 			name: "key not found secret not found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
