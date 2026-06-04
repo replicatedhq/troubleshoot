@@ -232,6 +232,34 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
+			name: "found with only fail outcome configured uses default pass message, not the fail outcome's message",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Not found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: true,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				Message: "Secret test-secret was found in namespace test-namespace",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
 			name: "spec with neither fail nor pass outcome returns nil so framework can surface the missing-outcome error",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{

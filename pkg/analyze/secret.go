@@ -76,11 +76,6 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		Title:   a.Title(),
 		IconKey: "kubernetes_analyze_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
-		IsFail:  true,
-	}
-	if failOutcome != nil {
-		result.Message = failOutcome.Message
-		result.URI = failOutcome.URI
 	}
 
 	secretFound := foundSecret.SecretExists
@@ -88,11 +83,16 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		secretFound = foundSecret.Key == analyzer.Key && foundSecret.KeyExists
 	}
 	if secretFound {
-		result.IsFail = false
 		result.IsPass = true
 		if passOutcome != nil {
 			result.Message = passOutcome.Message
 			result.URI = passOutcome.URI
+		}
+	} else {
+		result.IsFail = true
+		if failOutcome != nil {
+			result.Message = failOutcome.Message
+			result.URI = failOutcome.URI
 		}
 	}
 
