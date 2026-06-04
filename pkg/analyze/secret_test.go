@@ -167,44 +167,7 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
-			name: "not found with warn-when-notFound outcome and no fail outcome",
-			analyzer: &troubleshootv1beta2.AnalyzeSecret{
-				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
-					CheckName: "Optional Secret",
-				},
-				Namespace:  "default",
-				SecretName: "does-not-exist",
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "notFound",
-							Message: "secret missing (warn)",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							Message: "secret found",
-						},
-					},
-				},
-			},
-			mockFiles: map[string][]byte{
-				"secrets/default/does-not-exist.json": mustJSONMarshalIndent(t, collect.SecretOutput{
-					Namespace:    "default",
-					Name:         "does-not-exist",
-					SecretExists: false,
-				}),
-			},
-			want: &AnalyzeResult{
-				IsWarn:  true,
-				Message: "secret missing (warn)",
-				Title:   "Optional Secret",
-				IconKey: "kubernetes_analyze_secret",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
-			},
-		},
-		{
-			name: "not found with no fail and no warn outcomes returns benign result without panic",
+			name: "not found with no fail outcome falls back to default message instead of panicking",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret",
@@ -227,7 +190,7 @@ func Test_analyzeSecret(t *testing.T) {
 				}),
 			},
 			want: &AnalyzeResult{
-				IsWarn:  true,
+				IsFail:  true,
 				Message: "Secret does-not-exist was not found in namespace default",
 				Title:   "Optional Secret",
 				IconKey: "kubernetes_analyze_secret",
@@ -235,7 +198,7 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
-			name: "key not found with warn-when-notFound and no fail outcome",
+			name: "key not found with no fail outcome falls back to default message instead of panicking",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret Key",
@@ -244,12 +207,6 @@ func Test_analyzeSecret(t *testing.T) {
 				SecretName: "test-secret",
 				Key:        "missing-key",
 				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "notFound",
-							Message: "key missing (warn)",
-						},
-					},
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "key found",
@@ -267,8 +224,8 @@ func Test_analyzeSecret(t *testing.T) {
 				}),
 			},
 			want: &AnalyzeResult{
-				IsWarn:  true,
-				Message: "key missing (warn)",
+				IsFail:  true,
+				Message: "Key missing-key was not found in secret test-namespace/test-secret",
 				Title:   "Optional Secret Key",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",

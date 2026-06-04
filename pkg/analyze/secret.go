@@ -60,47 +60,34 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
-	var failOutcome, warnOutcome, notFoundWarnOutcome *troubleshootv1beta2.SingleOutcome
+	var failOutcome *troubleshootv1beta2.SingleOutcome
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			failOutcome = outcome.Fail
 		}
-		if outcome.Warn != nil {
-			warnOutcome = outcome.Warn
-			if outcome.Warn.When == "notFound" {
-				notFoundWarnOutcome = outcome.Warn
-			}
-		}
 	}
 
-	applyNotFound := func(defaultMessage string) {
-		switch {
-		case notFoundWarnOutcome != nil:
-			result.IsWarn = true
-			result.Message = notFoundWarnOutcome.Message
-			result.URI = notFoundWarnOutcome.URI
-		case failOutcome != nil:
-			result.IsFail = true
+	// The secret analyzer only supports fail (not found) and pass (found) outcomes
+	// per https://troubleshoot.sh/docs/analyze/secrets. When the spec omits fail,
+	// we still report not-found as IsFail with a default message rather than panic.
+	applyFail := func(defaultMessage string) {
+		result.IsFail = true
+		if failOutcome != nil {
 			result.Message = failOutcome.Message
 			result.URI = failOutcome.URI
-		case warnOutcome != nil:
-			result.IsWarn = true
-			result.Message = warnOutcome.Message
-			result.URI = warnOutcome.URI
-		default:
-			result.IsWarn = true
+		} else {
 			result.Message = defaultMessage
 		}
 	}
 
 	if !foundSecret.SecretExists {
-		applyNotFound(fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace))
+		applyFail(fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace))
 		return &result, nil
 	}
 
 	if analyzer.Key != "" {
 		if foundSecret.Key != analyzer.Key || !foundSecret.KeyExists {
-			applyNotFound(fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName))
+			applyFail(fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName))
 			return &result, nil
 		}
 	}
