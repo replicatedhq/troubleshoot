@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -16,18 +17,49 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// Max number of concurrent redactors to run
-// Ensure the number is low enough since each of the redactors
-// also spawns goroutines to redact files in tar archives and
-// other goroutines for each redactor spec.
-const MAX_CONCURRENT_REDACTORS = 10
+// Default cap on concurrent file redactors. Each redactor also spawns
+// goroutines to redact files in tar archives and goroutines for each
+// redactor spec, so the ceiling is intentionally low.
+const DefaultMaxConcurrentRedactors = 10
+
+// MaxConcurrentRedactorsEnvVar is the environment variable name used to
+// override DefaultMaxConcurrentRedactors at runtime. Operators set this on
+// the support-bundle binary (e.g. inside a Job/initContainer) when the
+// default ceiling becomes a bottleneck for very large bundles.
+const MaxConcurrentRedactorsEnvVar = "TROUBLESHOOT_MAX_CONCURRENT_REDACTORS"
+
+// maxConcurrentRedactors returns the active cap on concurrent redactors.
+// It reads MaxConcurrentRedactorsEnvVar; if unset, empty, non-numeric, or
+// <= 0 it falls back to DefaultMaxConcurrentRedactors (with a klog warning
+// for non-empty invalid input so silent misconfiguration is hard to miss).
+func maxConcurrentRedactors() int {
+	raw, ok := os.LookupEnv(MaxConcurrentRedactorsEnvVar)
+	if !ok || raw == "" {
+		return DefaultMaxConcurrentRedactors
+	}
+
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		klog.Warningf("Invalid %s=%q (not an integer); falling back to default %d", MaxConcurrentRedactorsEnvVar, raw, DefaultMaxConcurrentRedactors)
+		return DefaultMaxConcurrentRedactors
+	}
+	if n <= 0 {
+		klog.Warningf("Invalid %s=%d (must be > 0); falling back to default %d", MaxConcurrentRedactorsEnvVar, n, DefaultMaxConcurrentRedactors)
+		return DefaultMaxConcurrentRedactors
+	}
+
+	if n != DefaultMaxConcurrentRedactors {
+		klog.Infof("Overriding concurrent redactor cap: %s=%d (default %d)", MaxConcurrentRedactorsEnvVar, n, DefaultMaxConcurrentRedactors)
+	}
+	return n
+}
 
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	wg := &sync.WaitGroup{}
 
 	// Error channel to capture errors from goroutines
 	errorCh := make(chan error, len(input))
-	limitCh := make(chan struct{}, MAX_CONCURRENT_REDACTORS)
+	limitCh := make(chan struct{}, maxConcurrentRedactors())
 	defer close(limitCh)
 
 	for k, v := range input {
