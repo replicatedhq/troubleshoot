@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -79,9 +80,31 @@ func analyzeTextAnalyze(
 
 	results := []*AnalyzeResult{}
 
+	// Iterate matched files in sorted order so multi-file results are
+	// deterministic, and include the matched file path in each result title
+	// when more than one file matched. Without this, a glob fileName (e.g.
+	// the per-node output of a runDaemonSet collector) produces N identical
+	// results that cannot be told apart in any rendered report. The shared
+	// directory prefix is trimmed because the matched keys can be absolute
+	// paths into a temp dir at runtime; only the distinguishing part of the
+	// path belongs in the title.
+	fileNames := make([]string, 0, len(collected))
+	for fileName := range collected {
+		fileNames = append(fileNames, fileName)
+	}
+	sort.Strings(fileNames)
+
+	sharedPrefix := commonDirPrefix(fileNames)
+	resultTitle := func(fileName string) string {
+		if len(collected) > 1 {
+			return fmt.Sprintf("%s (%s)", title, strings.TrimPrefix(fileName, sharedPrefix))
+		}
+		return title
+	}
+
 	if analyzer.RegexPattern != "" {
-		for _, fileContents := range collected {
-			result, err := analyzeRegexPattern(analyzer.RegexPattern, fileContents, analyzer.Outcomes, title)
+		for _, fileName := range fileNames {
+			result, err := analyzeRegexPattern(analyzer.RegexPattern, collected[fileName], analyzer.Outcomes, resultTitle(fileName))
 			if err != nil {
 				return nil, err
 			}
@@ -92,8 +115,8 @@ func analyzeTextAnalyze(
 	}
 
 	if analyzer.RegexGroups != "" {
-		for _, fileContents := range collected {
-			result, err := analyzeRegexGroups(analyzer.RegexGroups, fileContents, analyzer.Outcomes, title)
+		for _, fileName := range fileNames {
+			result, err := analyzeRegexGroups(analyzer.RegexGroups, collected[fileName], analyzer.Outcomes, resultTitle(fileName))
 			if err != nil {
 				return nil, err
 			}
@@ -120,6 +143,31 @@ func analyzeTextAnalyze(
 			Message: "Invalid analyzer",
 		},
 	}, nil
+}
+
+// commonDirPrefix returns the longest directory prefix (ending in "/") shared
+// by all of the given paths, or "" if they share none.
+func commonDirPrefix(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	prefix := paths[0]
+	i := strings.LastIndex(prefix, "/")
+	if i < 0 {
+		return ""
+	}
+	prefix = prefix[:i+1]
+	for _, path := range paths[1:] {
+		for !strings.HasPrefix(path, prefix) {
+			trimmed := strings.TrimSuffix(prefix, "/")
+			i := strings.LastIndex(trimmed, "/")
+			if i < 0 {
+				return ""
+			}
+			prefix = trimmed[:i+1]
+		}
+	}
+	return prefix
 }
 
 // isLikelyExecOutput checks if a filename looks like exec collector output

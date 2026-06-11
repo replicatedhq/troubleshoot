@@ -280,7 +280,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  true,
 					IsWarn:  false,
 					IsFail:  false,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-1.txt)",
 					Message: "pass",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
@@ -289,7 +289,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  false,
 					IsFail:  true,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-2.txt)",
 					Message: "fail",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
@@ -338,6 +338,107 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
+			name: "glob matching multiple files includes matched file in each title",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "true",
+							Message: "swap is disabled on this node",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "false",
+							Message: "swap is enabled on this node",
+						},
+					},
+				},
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Swap disabled on every node",
+				},
+				CollectorName: "swap-check",
+				FileName:      "*.log",
+				RegexPattern:  "total_swap_kb=0",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "Swap disabled on every node (node-a.log)",
+					Message: "swap is disabled on this node",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "Swap disabled on every node (node-b.log)",
+					Message: "swap is enabled on this node",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "Swap disabled on every node (node-c.log)",
+					Message: "swap is disabled on this node",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"swap-check/node-a.log": []byte("total_swap_kb=0"),
+				"swap-check/node-b.log": []byte("total_swap_kb=1024"),
+				"swap-check/node-c.log": []byte("total_swap_kb=0"),
+			},
+		},
+		{
+			name: "regexGroups glob matching multiple files includes matched file in each title",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "found node {{ .node }}",
+						},
+					},
+				},
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "node identity",
+				},
+				CollectorName: "ds",
+				FileName:      "*.log",
+				RegexGroups:   `node=(?P<node>\S+)`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "node identity (a.log)",
+					Message: "found node alpha",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "node identity (b.log)",
+					Message: "found node beta",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"ds/a.log": []byte("node=alpha"),
+				"ds/b.log": []byte("node=beta"),
+			},
+		},
+		{
 			name: "multiple results with both warn and fail case 1, only fail",
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -366,7 +467,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  true,
 					IsWarn:  false,
 					IsFail:  false,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-1.txt)",
 					Message: "pass",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
@@ -375,7 +476,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  false,
 					IsFail:  true,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-2.txt)",
 					Message: "fail",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
@@ -755,7 +856,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  true,
 					IsWarn:  false,
 					IsFail:  false,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-1.txt)",
 					Message: "success",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
@@ -764,7 +865,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsPass:  true,
 					IsWarn:  false,
 					IsFail:  false,
-					Title:   "text-collector-1",
+					Title:   "text-collector-1 (cfile-2.txt)",
 					Message: "success",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
