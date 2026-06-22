@@ -186,7 +186,7 @@ require (
 	github.com/c9s/goprocinfo v0.0.0-20170724085704-0010a05ce49f // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/containerd/containerd v1.7.32 // indirect
+	github.com/containerd/containerd v1.7.33 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/evanphx/json-patch v5.9.11+incompatible // indirect
