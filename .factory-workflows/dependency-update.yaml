@@ -1,0 +1,202 @@
+schema_version: v1
+name: dependency-update-troubleshoot
+enabled: true
+
+trigger:
+  cron:
+    schedule: "0 21 * * *"
+    timezone: "America/Chicago"
+    overlap_policy: skip
+    timeout: 2h
+
+enable_manual_trigger: true
+
+tags: ["cron", "dependencies"]
+color: cyan
+
+stages:
+  - id: start
+    label: Start
+    entry: true
+    on_enter:
+      inject: |
+        Workflow task: run the Go dependency update maintenance workflow for Troubleshoot.
+
+        This is an unattended dependency maintenance workflow. Do not ask for
+        permission to start. Immediately say exactly [PROCEED] so the workflow
+        can run the dependency updater, then continue with the task using the
+        follow-up instructions.
+
+        Scope this workflow to Go dependency updates only. Focus on the
+        top-level go.mod/go.sum.
+
+        Treat compatibility fixes as part of this workflow. If an updated
+        dependency causes build, lint, type, or test failures, first attempt
+        reasonable scoped code changes within the affected Go module to support
+        the new version. Do not downgrade, pin, or skip an update just because
+        it has breaking API changes unless the required changes are broad,
+        risky, unrelated to this workflow's scope, or cannot be completed within
+        reasonable effort. If you defer an update, explain exactly why.
+
+        Before opening a PR, validate using the repo make targets in the Nix
+        development environment (nix develop -c). Do not run ad-hoc go
+        commands; use exactly these targets:
+
+        - make build
+        - make test
+
+        Note: make test-integration requires a Kubernetes cluster. Only add it
+        to the validation if the workflow environment provides one.
+
+        Fix any failures and open one grouped PR.
+        Say [DONE] with the PR URL only when the PR is open.
+        If dependency_updates.files_changed is empty and no PR is needed, say
+        [NO_CHANGES] instead of [DONE].
+
+  - id: working
+    label: Working
+    triggers:
+      - message_contains: "[PROCEED]"
+    on_enter:
+      run:
+        command: |
+          bash -lc '
+            set -euo pipefail
+
+            if ! command -v go >/dev/null 2>&1; then
+              nix profile install nixpkgs#go_1_26 || nix-env -iA nixpkgs.go_1_26
+            fi
+
+            go_path="$(command -v go)"
+            go_version="$(go version)"
+            printf "{\"status\":\"ready\",\"go_path\":\"%s\",\"go_version\":\"%s\"}\n" "$go_path" "$go_version"
+          '
+        output: go_toolchain
+        timeout: 10m
+      dependency_updates:
+        ecosystems: [go]
+        paths: ["."]
+        output: dependency_updates
+        timeout: 30m
+      inject: |
+        Dependency updates were applied for the root Go module.
+
+        Scope this workflow to Go dependency updates only. Focus on the
+        top-level go.mod/go.sum. Exclude Node dependencies and any non-Go
+        modules.
+
+        Treat compatibility fixes as part of this workflow. If an updated
+        dependency causes build, lint, type, or test failures, first attempt
+        reasonable scoped code changes within the affected Go module to support
+        the new version. Do not downgrade, pin, or skip an update just because
+        it has breaking API changes unless the required changes are broad,
+        risky, unrelated to this workflow's scope, or cannot be completed within
+        reasonable effort. If you defer an update, explain exactly why.
+
+        Review {{ .Outputs.dependency_updates.files_changed }}.
+        Before opening a PR, validate using the repo make targets in the Nix
+        development environment (nix develop -c). Do not run ad-hoc go
+        commands; use exactly these targets:
+
+        - make build
+        - make test
+
+        Note: make test-integration requires a Kubernetes cluster. Only add it
+        to the validation if the workflow environment provides one.
+
+        Fix any failures and open one grouped PR.
+        Say [DONE] with the PR URL only when the PR is open.
+        If {{ .Outputs.dependency_updates.files_changed }} is empty and no PR is
+        needed, say [NO_CHANGES] instead of [DONE].
+
+  - id: no-changes
+    label: No Changes
+    triggers:
+      - message_contains: "[NO_CHANGES]"
+      - message_contains: "[DONE] No changes"
+    terminal: true
+
+  - id: validate
+    label: Validate
+    triggers:
+      - message_contains: "[DONE]"
+    on_enter:
+      run:
+        command: |
+          nix develop -c bash -lc '
+            set +e
+            tmpdir="$(mktemp -d)"
+
+            make build >"$tmpdir/build.log" 2>&1
+            build_status=$?
+
+            make test >"$tmpdir/test.log" 2>&1
+            test_status=$?
+
+            python3 - "$tmpdir" "$build_status" "$test_status" <<PY
+          import json
+          import pathlib
+          import sys
+
+          tmpdir = pathlib.Path(sys.argv[1])
+          statuses = {
+              "build": int(sys.argv[2]),
+              "test": int(sys.argv[3]),
+          }
+
+          checks = []
+          for name, code in statuses.items():
+              log = (tmpdir / f"{name}.log").read_text(errors="replace")
+              checks.append({
+                  "name": name,
+                  "status": "passed" if code == 0 else "failed",
+                  "exit_code": code,
+                  "log_tail": log[-12000:],
+              })
+
+          failed = [check for check in checks if check["exit_code"] != 0]
+          print(json.dumps({
+              "status": "passed" if not failed else "failed",
+              "reason": "all validation checks passed" if not failed else "one or more validation checks failed",
+              "checks": checks,
+          }))
+          PY
+          '
+        output: validation
+        timeout: 45m
+    gate:
+      output: validation
+      pass:
+        path: status
+        values: [passed]
+      fail:
+        path: status
+        values: [failed, error]
+      required: true
+
+  - id: fix-validation
+    label: Fix Validation
+    triggers:
+      - gate_result:
+          stage: validate
+          verdict: fail
+    on_enter:
+      inject: |
+        Validation failed before completion.
+
+        Status: {{ .Outputs.validation.status }}
+        Reason: {{ .Outputs.validation.reason }}
+
+        Checks:
+        {{ .Outputs.validation.checks }}
+
+        Fix the failures above, commit the changes to the same PR branch, and
+        say [DONE] with the PR URL again when the PR is ready for validation.
+
+  - id: complete
+    label: Complete
+    triggers:
+      - gate_result:
+          stage: validate
+          verdict: pass
+    terminal: true
