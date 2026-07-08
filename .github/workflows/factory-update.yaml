@@ -1,0 +1,32 @@
+name: Publish ElasticClaw Workflow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".factory-workflows/dependency-update.yaml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish workflow (${{ matrix.workflow }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - .factory-workflows/dependency-update.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish workflow (dependency-update)
+        uses: elasticclaw/actions/publish-workflow@main
+        with:
+          hub-endpoint: https://factory.repldev.com
+          token: ${{ secrets.ELASTICCLAW_TOKEN }}
+          workspace: replicated-troubleshoot
+          path: ${{ matrix.workflow }}
