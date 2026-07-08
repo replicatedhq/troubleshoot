@@ -22,36 +22,14 @@ stages:
       inject: |
         Workflow task: run the Go dependency update maintenance workflow for Troubleshoot.
 
-        This is an unattended dependency maintenance workflow. Do not ask for
-        permission to start. Immediately say exactly [PROCEED] so the workflow
-        can run the dependency updater, then continue with the task using the
-        follow-up instructions.
+        This is an unattended dependency maintenance workflow. Scope: Go
+        dependency updates for the top-level go.mod/go.sum only. After updates
+        are applied, you will review the changes, fix any compatibility issues,
+        validate with make build and make test, and open one grouped PR.
 
-        Scope this workflow to Go dependency updates only. Focus on the
-        top-level go.mod/go.sum.
-
-        Treat compatibility fixes as part of this workflow. If an updated
-        dependency causes build, lint, type, or test failures, first attempt
-        reasonable scoped code changes within the affected Go module to support
-        the new version. Do not downgrade, pin, or skip an update just because
-        it has breaking API changes unless the required changes are broad,
-        risky, unrelated to this workflow's scope, or cannot be completed within
-        reasonable effort. If you defer an update, explain exactly why.
-
-        Before opening a PR, validate using the repo make targets in the Nix
-        development environment (nix develop -c). Do not run ad-hoc go
-        commands; use exactly these targets:
-
-        - make build
-        - make test
-
-        Note: make test-integration requires a Kubernetes cluster. Only add it
-        to the validation if the workflow environment provides one.
-
-        Fix any failures and open one grouped PR.
-        Say [DONE] with the PR URL only when the PR is open.
-        If dependency_updates.files_changed is empty and no PR is needed, say
-        [NO_CHANGES] instead of [DONE].
+        Do not ask for permission to start. Immediately say exactly [PROCEED]
+        to run the dependency updater. Detailed post-update instructions will
+        follow.
 
   - id: working
     label: Working
