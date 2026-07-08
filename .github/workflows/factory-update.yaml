@@ -2,36 +2,30 @@ name: Publish ElasticClaw Workflow
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - ".factory-workflows/**"
+      - ".factory-workflows/dependency-update.yaml"
   workflow_dispatch:
 
 jobs:
   publish:
+    name: Publish workflow (${{ matrix.workflow }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
+      fail-fast: false
       matrix:
         workflow:
           - .factory-workflows/dependency-update.yaml
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install elasticclaw
-        env:
-          ELASTICCLAW_VERSION: "2026.07.07"
-        run: |
-          set -euo pipefail
-          base="https://github.com/elasticclaw/elasticclaw/releases/download/$ELASTICCLAW_VERSION"
-          curl -fsSLO "$base/elasticclaw-linux-amd64"
-          curl -fsSLO "$base/checksums.txt"
-          grep " elasticclaw-linux-amd64$" checksums.txt | sha256sum -c -
-          chmod +x elasticclaw-linux-amd64
-          sudo mv elasticclaw-linux-amd64 /usr/local/bin/elasticclaw
-
-      - name: Push workflows
-        env:
-          ELASTICCLAW_HUB_URL: https://factory.repldev.com
-          ELASTICCLAW_CLAW_TOKEN: ${{ secrets.ELASTICCLAW_TOKEN }}
-        run: |
-          elasticclaw workflow push --workspace replicated-troubleshoot ${{ matrix.workflow }}
+      - name: Publish workflow (dependency-update)
+        uses: elasticclaw/actions/publish-workflow@main
+        with:
+          hub-endpoint: https://factory.repldev.com
+          token: ${{ secrets.ELASTICCLAW_TOKEN }}
+          workspace: replicated-troubleshoot
+          path: ${{ matrix.workflow }}
