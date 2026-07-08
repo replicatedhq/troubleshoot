@@ -19,7 +19,7 @@ jobs:
 
       - name: Install elasticclaw
         env:
-          ELASTICCLAW_VERSION: "2026.5.20"
+          ELASTICCLAW_VERSION: "2026.07.07"
         run: |
           set -euo pipefail
           base="https://github.com/elasticclaw/elasticclaw/releases/download/$ELASTICCLAW_VERSION"
