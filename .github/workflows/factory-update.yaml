@@ -29,11 +29,9 @@ jobs:
           chmod +x elasticclaw-linux-amd64
           sudo mv elasticclaw-linux-amd64 /usr/local/bin/elasticclaw
 
-      - name: Login
-        run: elasticclaw login --hub "https://factory.repldev.com" --token "$ELASTICCLAW_TOKEN"
-        env:
-          ELASTICCLAW_TOKEN: ${{ secrets.ELASTICCLAW_TOKEN }}
-
       - name: Push workflows
+        env:
+          ELASTICCLAW_HUB_URL: https://factory.repldev.com
+          ELASTICCLAW_CLAW_TOKEN: ${{ secrets.ELASTICCLAW_TOKEN }}
         run: |
           elasticclaw workflow push --workspace replicated-troubleshoot ${{ matrix.workflow }}
