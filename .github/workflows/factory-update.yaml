@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Publish workflow (dependency-update)
-        uses: elasticclaw/actions/publish-workflow@main
+        uses: elasticclaw/actions/publish-workflow@updates
         with:
           hub-endpoint: https://factory.repldev.com
           token: ${{ secrets.ELASTICCLAW_TOKEN }}
