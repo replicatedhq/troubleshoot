@@ -58,6 +58,7 @@ func RootCmd() *cobra.Command {
 	cmd.AddCommand(MysqlCmd())
 	cmd.AddCommand(MssqlCmd())
 	cmd.AddCommand(RedisCmd())
+	cmd.AddCommand(ClickhouseCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
