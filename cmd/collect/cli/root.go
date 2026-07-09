@@ -49,6 +49,16 @@ func RootCmd() *cobra.Command {
 
 	cmd.AddCommand(util.VersionCmd())
 
+	// Per-collector subcommands: run a single collector and print its native
+	// result JSON. Each has its own flags and help. These let a collector run
+	// inside a Pod via the troubleshoot image (e.g. as a runPod collector), so
+	// the check executes from within the cluster rather than wherever the CLI runs.
+	cmd.AddCommand(HTTPCmd())
+	cmd.AddCommand(PostgresCmd())
+	cmd.AddCommand(MysqlCmd())
+	cmd.AddCommand(MssqlCmd())
+	cmd.AddCommand(RedisCmd())
+
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 	cmd.Flags().String("format", "json", "output format, one of json or raw.")
