@@ -19,7 +19,9 @@ func RootCmd() *cobra.Command {
 		Short:        "Run a collector",
 		Long:         `Run a collector and output the results.`,
 		SilenceUsage: true,
-		PreRun: func(cmd *cobra.Command, args []string) {
+		// PersistentPreRun/PersistentPostRun (rather than PreRun/PostRun) so this
+		// setup also runs for the per-collector subcommands, not just `collect [url]`.
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
 			v.BindPFlags(cmd.Flags())
 
@@ -38,7 +40,7 @@ func RootCmd() *cobra.Command {
 
 			return runCollect(v, args[0])
 		},
-		PostRun: func(cmd *cobra.Command, args []string) {
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {
 				klog.Errorf("Failed to stop profiling: %v", err)
 			}
@@ -67,7 +69,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("collector-pull-policy", "", "the pull policy of the collector image")
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
-	cmd.Flags().Bool("debug", false, "enable debug logging")
+	cmd.PersistentFlags().Bool("debug", false, "enable debug logging")
 	cmd.Flags().String("chroot", "", "Chroot to path")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
@@ -78,7 +80,7 @@ func RootCmd() *cobra.Command {
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
-	k8sutil.AddFlags(cmd.Flags())
+	k8sutil.AddFlags(cmd.PersistentFlags())
 
 	// Initialize klog flags
 	logger.InitKlogFlags(cmd)
