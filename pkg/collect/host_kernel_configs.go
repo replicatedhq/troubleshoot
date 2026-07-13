@@ -82,7 +82,6 @@ func loadKConfigs(kernelRelease string) (KConfigs, error) {
 	// https://github.com/torvalds/linux/blob/v4.3/init/Kconfig#L794
 	// https://github.com/torvalds/linux/blob/v4.3/init/Kconfig#L9
 	possiblePaths := []string{
-		"/proc/config.gz",
 		"/boot/config-" + kernelRelease,
 		"/usr/src/linux-" + kernelRelease + "/.config",
 		"/usr/src/linux/.config",
@@ -91,6 +90,13 @@ func loadKConfigs(kernelRelease string) (KConfigs, error) {
 		"/usr/lib/kernel/config-" + kernelRelease,
 		"/usr/src/linux-headers-" + kernelRelease + "/.config",
 		"/lib/modules/" + kernelRelease + "/build/.config",
+	}
+
+	// /proc/config.gz reflects the currently running kernel. Only use it when
+	// the requested kernel release matches the running kernel.
+	currentRelease, err := getKernelRelease()
+	if err == nil && currentRelease == kernelRelease {
+		possiblePaths = append([]string{"/proc/config.gz"}, possiblePaths...)
 	}
 
 	for _, path := range possiblePaths {
