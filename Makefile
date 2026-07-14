@@ -152,17 +152,8 @@ vet:
 
 .PHONY: generate
 generate: controller-gen client-gen
-	$(CONTROLLER_GEN) \
-		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
-	$(CLIENT_GEN) \
-		--output-dir=. \
-		--output-pkg=github.com/replicatedhq/troubleshoot/pkg/client \
-		--clientset-name troubleshootclientset \
-		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
-		--input troubleshoot/v1beta1 \
-		--input troubleshoot/v1beta2 \
-		--input troubleshoot/v1beta3 \
-		--go-header-file ./hack/boilerplate.go.txt
+	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+	$(CLIENT_GEN) --output-dir=. --output-pkg=github.com/replicatedhq/troubleshoot/pkg/client --clientset-name troubleshootclientset --input-base github.com/replicatedhq/troubleshoot/pkg/apis --input troubleshoot/v1beta1 --input troubleshoot/v1beta2 --input troubleshoot/v1beta3 --go-header-file ./hack/boilerplate.go.txt
 	cp -r troubleshootclientset pkg/client
 	rm -rf troubleshootclientset
 
@@ -194,12 +185,12 @@ bin/docsgen:
 
 controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.19.0
-CONTROLLER_GEN=$(shell which controller-gen)
+CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
 
 .PHONY: client-gen
 client-gen:
 	go install k8s.io/code-generator/cmd/client-gen@v0.34.0
-CLIENT_GEN=$(shell which client-gen)
+CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 
 .PHONY: release
 release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})

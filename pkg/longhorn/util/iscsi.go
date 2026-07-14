@@ -9,19 +9,23 @@ import (
 	"path/filepath"
 	"strings"
 
+	longhornns "github.com/longhorn/go-common-libs/ns"
+	longhornproc "github.com/longhorn/go-common-libs/proc"
+	lhtypes "github.com/longhorn/go-common-libs/types"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-
-	iscsi_util "github.com/longhorn/go-iscsi-helper/util"
 )
+
+func newHostNamespaceExecutor() (*longhornns.Executor, error) {
+	return longhornns.NewNamespaceExecutor(lhtypes.ProcessNone, HostProcPath, []lhtypes.Namespace{lhtypes.NamespaceMnt})
+}
 
 func GetDiskInfo(directory string) (info *DiskInfo, err error) {
 	defer func() {
 		err = errors.Wrapf(err, "cannot get disk info of directory %v", directory)
 	}()
-	initiatorNSPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	mountPath := fmt.Sprintf("--mount=%s/mnt", initiatorNSPath)
-	output, err := Execute([]string{}, "nsenter", mountPath, "stat", "-fc", "{\"path\":\"%n\",\"fsid\":\"%i\",\"type\":\"%T\",\"freeBlock\":%f,\"totalBlock\":%b,\"blockSize\":%S}", directory)
+	nsDir := longhornproc.GetHostNamespaceDirectory(HostProcPath)
+	output, err := Execute([]string{}, "nsenter", "--mount="+nsDir+"/mnt", "stat", "-fc", "{\"path\":\"%n\",\"fsid\":\"%i\",\"type\":\"%T\",\"freeBlock\":%f,\"totalBlock\":%b,\"blockSize\":%S}", directory)
 	if err != nil {
 		return nil, err
 	}
@@ -51,17 +55,16 @@ func RemoveHostDirectoryContent(directory string) (err error) {
 	if strings.Count(dir, "/") < 2 {
 		return fmt.Errorf("prohibit removing the top level of directory %v", dir)
 	}
-	initiatorNSPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(initiatorNSPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return err
 	}
 	// check if the directory already deleted
-	if _, err := nsExec.Execute("ls", []string{dir}); err != nil {
+	if _, err := nsExec.Execute(nil, "ls", []string{dir}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		klog.Warningf("cannot find host directory %v for removal", dir)
 		return nil
 	}
-	if _, err := nsExec.Execute("rm", []string{"-rf", dir}); err != nil {
+	if _, err := nsExec.Execute(nil, "rm", []string{"-rf", dir}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		return err
 	}
 	return nil
@@ -84,35 +87,33 @@ func CopyHostDirectoryContent(src, dest string) (err error) {
 		return fmt.Errorf("prohibit copying the content for the top level of directory %v or %v", srcDir, destDir)
 	}
 
-	initiatorNSPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(initiatorNSPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return err
 	}
 
 	// There can be no src directory, hence returning nil is fine.
-	if _, err := nsExec.Execute("bash", []string{"-c", fmt.Sprintf("ls %s", filepath.Join(srcDir, "*"))}); err != nil {
+	if _, err := nsExec.Execute(nil, "bash", []string{"-c", fmt.Sprintf("ls %s", filepath.Join(srcDir, "*"))}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		klog.V(2).Infof("cannot list the content of the src directory %v for the copy, will do nothing: %v", srcDir, err)
 		return nil
 	}
 	// Check if the dest directory exists.
-	if _, err := nsExec.Execute("mkdir", []string{"-p", destDir}); err != nil {
+	if _, err := nsExec.Execute(nil, "mkdir", []string{"-p", destDir}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		return err
 	}
 	// The flag `-n` means not overwriting an existing file.
-	if _, err := nsExec.Execute("bash", []string{"-c", fmt.Sprintf("cp -an %s %s", filepath.Join(srcDir, "*"), destDir)}); err != nil {
+	if _, err := nsExec.Execute(nil, "bash", []string{"-c", fmt.Sprintf("cp -an %s %s", filepath.Join(srcDir, "*"), destDir)}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		return err
 	}
 	return nil
 }
 
 func CreateDiskPathReplicaSubdirectory(path string) error {
-	nsPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(nsPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return err
 	}
-	if _, err := nsExec.Execute("mkdir", []string{"-p", filepath.Join(path, ReplicaDirectory)}); err != nil {
+	if _, err := nsExec.Execute(nil, "mkdir", []string{"-p", filepath.Join(path, ReplicaDirectory)}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		return errors.Wrapf(err, "error creating data path %v on host", path)
 	}
 
@@ -120,22 +121,22 @@ func CreateDiskPathReplicaSubdirectory(path string) error {
 }
 
 func DeleteDiskPathReplicaSubdirectoryAndDiskCfgFile(
-	nsExec *iscsi_util.NamespaceExecutor, path string) error {
+	nsExec *longhornns.Executor, path string) error {
 
 	var err error
 	dirPath := filepath.Join(path, ReplicaDirectory)
 	filePath := filepath.Join(path, DiskConfigFile)
 
 	// Check if the replica directory exist, delete it
-	if _, err := nsExec.Execute("ls", []string{dirPath}); err == nil {
-		if _, err := nsExec.Execute("rmdir", []string{dirPath}); err != nil {
+	if _, err := nsExec.Execute(nil, "ls", []string{dirPath}, lhtypes.ExecuteDefaultTimeout); err == nil {
+		if _, err := nsExec.Execute(nil, "rmdir", []string{dirPath}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return errors.Wrapf(err, "error deleting data path %v on host", path)
 		}
 	}
 
 	// Check if the disk cfg file exist, delete it
-	if _, err := nsExec.Execute("ls", []string{filePath}); err == nil {
-		if _, err := nsExec.Execute("rm", []string{filePath}); err != nil {
+	if _, err := nsExec.Execute(nil, "ls", []string{filePath}, lhtypes.ExecuteDefaultTimeout); err == nil {
+		if _, err := nsExec.Execute(nil, "rm", []string{filePath}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			err = errors.Wrapf(err, "error deleting disk cfg file %v on host", filePath)
 		}
 	}
@@ -145,8 +146,7 @@ func DeleteDiskPathReplicaSubdirectoryAndDiskCfgFile(
 
 func ExpandFileSystem(volumeName string) (err error) {
 	devicePath := filepath.Join(DeviceDirectory, volumeName)
-	nsPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(nsPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func ExpandFileSystem(volumeName string) (err error) {
 	// make sure there is a mount point for the volume before file system expansion
 	tmpMountNeeded := true
 	mountPoint := ""
-	mountRes, err := nsExec.Execute("bash", []string{"-c", "mount | grep \"/" + volumeName + " \" | awk '{print $3}'"})
+	mountRes, err := nsExec.Execute(nil, "bash", []string{"-c", "mount | grep \"/" + volumeName + " \" | awk '{print $3}'"}, lhtypes.ExecuteDefaultTimeout)
 	if err != nil {
 		klog.Warningf("failed to use command mount to get the mount info of volume %v, consider the volume as unmounted: %v", volumeName, err)
 	} else {
@@ -185,10 +185,10 @@ func ExpandFileSystem(volumeName string) (err error) {
 	if tmpMountNeeded {
 		mountPoint = filepath.Join(TemporaryMountPointDirectory, volumeName)
 		klog.V(2).Infof("The volume %v is unmounted, hence it will be temporarily mounted on %v for file system expansion", volumeName, mountPoint)
-		if _, err := nsExec.Execute("mkdir", []string{"-p", mountPoint}); err != nil {
+		if _, err := nsExec.Execute(nil, "mkdir", []string{"-p", mountPoint}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return errors.Wrapf(err, "failed to create a temporary mount point %v before file system expansion", mountPoint)
 		}
-		if _, err := nsExec.Execute("mount", []string{devicePath, mountPoint}); err != nil {
+		if _, err := nsExec.Execute(nil, "mount", []string{devicePath, mountPoint}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return errors.Wrapf(err, "failed to temporarily mount volume %v on %v before file system expansion", volumeName, mountPoint)
 		}
 	}
@@ -199,11 +199,11 @@ func ExpandFileSystem(volumeName string) (err error) {
 	case "ext3":
 		fallthrough
 	case "ext4":
-		if _, err = nsExec.Execute("resize2fs", []string{devicePath}); err != nil {
+		if _, err = nsExec.Execute(nil, "resize2fs", []string{devicePath}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return err
 		}
 	case "xfs":
-		if _, err = nsExec.Execute("xfs_growfs", []string{mountPoint}); err != nil {
+		if _, err = nsExec.Execute(nil, "xfs_growfs", []string{mountPoint}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return err
 		}
 	default:
@@ -212,10 +212,10 @@ func ExpandFileSystem(volumeName string) (err error) {
 
 	// cleanup
 	if tmpMountNeeded {
-		if _, err := nsExec.Execute("umount", []string{mountPoint}); err != nil {
+		if _, err := nsExec.Execute(nil, "umount", []string{mountPoint}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return errors.Wrapf(err, "failed to unmount volume %v on the temporary mount point %v after file system expansion", volumeName, mountPoint)
 		}
-		if _, err := nsExec.Execute("rm", []string{"-r", mountPoint}); err != nil {
+		if _, err := nsExec.Execute(nil, "rm", []string{"-r", mountPoint}, lhtypes.ExecuteDefaultTimeout); err != nil {
 			return errors.Wrapf(err, "failed to remove the temporary mount point %v after file system expansion", mountPoint)
 		}
 	}
@@ -225,8 +225,7 @@ func ExpandFileSystem(volumeName string) (err error) {
 
 func DetectFileSystem(volumeName string) (string, error) {
 	devicePath := filepath.Join(DeviceDirectory, volumeName)
-	nsPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(nsPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return "", err
 	}
@@ -235,7 +234,7 @@ func DetectFileSystem(volumeName string) (string, error) {
 	// For filesystem `btrfs`, the schema is: `<device path>: UUID="<filesystem UUID>" UUID_SUB="<filesystem UUID_SUB>" TYPE="<filesystem type>"`
 	// For filesystem `ext4` or `xfs`, the schema is: `<device path>: UUID="<filesystem UUID>" TYPE="<filesystem type>"`
 	cmd := fmt.Sprintf("blkid %s | sed 's/.*TYPE=//g'", devicePath)
-	output, err := nsExec.Execute("bash", []string{"-c", cmd})
+	output, err := nsExec.Execute(nil, "bash", []string{"-c", cmd}, lhtypes.ExecuteDefaultTimeout)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get the file system info for volume %v, maybe there is no Linux file system on the volume", volumeName)
 	}
@@ -247,13 +246,12 @@ func DetectFileSystem(volumeName string) (string, error) {
 }
 
 func GetDiskConfig(path string) (*DiskConfig, error) {
-	nsPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(nsPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return nil, err
 	}
 	filePath := filepath.Join(path, DiskConfigFile)
-	output, err := nsExec.Execute("cat", []string{filePath})
+	output, err := nsExec.Execute(nil, "cat", []string{filePath}, lhtypes.ExecuteDefaultTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find config file %v on host: %v", filePath, err)
 	}
@@ -274,13 +272,12 @@ func GenerateDiskConfig(path string) (*DiskConfig, error) {
 		return nil, fmt.Errorf("BUG: Cannot marshal %+v: %v", cfg, err)
 	}
 
-	nsPath := iscsi_util.GetHostNamespacePath(HostProcPath)
-	nsExec, err := iscsi_util.NewNamespaceExecutor(nsPath)
+	nsExec, err := newHostNamespaceExecutor()
 	if err != nil {
 		return nil, err
 	}
 	filePath := filepath.Join(path, DiskConfigFile)
-	if _, err := nsExec.Execute("ls", []string{filePath}); err == nil {
+	if _, err := nsExec.Execute(nil, "ls", []string{filePath}, lhtypes.ExecuteDefaultTimeout); err == nil {
 		return nil, fmt.Errorf("disk cfg on %v exists, cannot override", filePath)
 	}
 
@@ -293,13 +290,13 @@ func GenerateDiskConfig(path string) (*DiskConfig, error) {
 		}
 	}()
 
-	if _, err := nsExec.ExecuteWithStdin("dd", []string{"of=" + filePath}, string(encoded)); err != nil {
+	if _, err := nsExec.ExecuteWithStdin(nil, "dd", []string{"of=" + filePath}, string(encoded), lhtypes.ExecuteDefaultTimeout); err != nil {
 		return nil, fmt.Errorf("cannot write to disk cfg on %v: %v", filePath, err)
 	}
 	if err := CreateDiskPathReplicaSubdirectory(path); err != nil {
 		return nil, err
 	}
-	if _, err := nsExec.Execute("sync", []string{filePath}); err != nil {
+	if _, err := nsExec.Execute(nil, "sync", []string{filePath}, lhtypes.ExecuteDefaultTimeout); err != nil {
 		return nil, fmt.Errorf("cannot sync disk cfg on %v: %v", filePath, err)
 	}
 
