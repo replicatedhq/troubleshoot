@@ -167,6 +167,118 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
+			name: "not found with no fail outcome falls back to default message instead of panicking",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Optional Secret",
+				},
+				Namespace:  "default",
+				SecretName: "does-not-exist",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "secret found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/default/does-not-exist.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "default",
+					Name:         "does-not-exist",
+					SecretExists: false,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsFail:  true,
+				Message: "Secret does-not-exist was not found in namespace default",
+				Title:   "Optional Secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "key not found with no fail outcome falls back to default message instead of panicking",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Optional Secret Key",
+				},
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Key:        "missing-key",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "key found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret/missing-key.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					Key:          "missing-key",
+					SecretExists: true,
+					KeyExists:    false,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsFail:  true,
+				Message: "Key missing-key was not found in secret test-namespace/test-secret",
+				Title:   "Optional Secret Key",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "found with only fail outcome configured uses default pass message, not the fail outcome's message",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Not found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: true,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				Message: "Secret test-secret was found in namespace test-namespace",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "spec with neither fail nor pass outcome returns nil so framework can surface the missing-outcome error",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Misconfigured",
+				},
+				Namespace:  "default",
+				SecretName: "does-not-exist",
+				Outcomes:   []*troubleshootv1beta2.Outcome{},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/default/does-not-exist.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "default",
+					Name:         "does-not-exist",
+					SecretExists: false,
+				}),
+			},
+			want: nil,
+		},
+		{
 			name: "key not found secret not found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{

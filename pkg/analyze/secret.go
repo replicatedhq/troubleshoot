@@ -30,6 +30,9 @@ func (a *AnalyzeSecret) Analyze(getFile getCollectedFileContents, findFiles getC
 	if err != nil {
 		return nil, err
 	}
+	if result == nil {
+		return nil, nil
+	}
 	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 	return []*AnalyzeResult{result}, nil
 }
@@ -54,42 +57,53 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		return nil, err
 	}
 
+	// The secret analyzer only supports fail (not found) and pass (found) outcomes
+	// per https://troubleshoot.sh/docs/analyze/secrets. If the spec contains
+	// neither, return nil and let the framework surface the missing-outcome error.
+	var failOutcome, passOutcome *troubleshootv1beta2.SingleOutcome
+	for _, outcome := range analyzer.Outcomes {
+		if outcome.Fail != nil {
+			failOutcome = outcome.Fail
+		} else if outcome.Pass != nil {
+			passOutcome = outcome.Pass
+		}
+	}
+	if failOutcome == nil && passOutcome == nil {
+		return nil, nil
+	}
+
 	result := AnalyzeResult{
 		Title:   a.Title(),
 		IconKey: "kubernetes_analyze_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
-	var failOutcome *troubleshootv1beta2.Outcome
-	for _, outcome := range analyzer.Outcomes {
-		if outcome.Fail != nil {
-			failOutcome = outcome
-		}
+	secretFound := foundSecret.SecretExists
+	if secretFound && analyzer.Key != "" {
+		secretFound = foundSecret.Key == analyzer.Key && foundSecret.KeyExists
 	}
-
-	if !foundSecret.SecretExists {
+	if secretFound {
+		result.IsPass = true
+		if passOutcome != nil {
+			result.Message = passOutcome.Message
+			result.URI = passOutcome.URI
+		}
+	} else {
 		result.IsFail = true
-		result.Message = failOutcome.Fail.Message
-		result.URI = failOutcome.Fail.URI
-
-		return &result, nil
-	}
-
-	if analyzer.Key != "" {
-		if foundSecret.Key != analyzer.Key || !foundSecret.KeyExists {
-			result.IsFail = true
-			result.Message = failOutcome.Fail.Message
-			result.URI = failOutcome.Fail.URI
-
-			return &result, nil
+		if failOutcome != nil {
+			result.Message = failOutcome.Message
+			result.URI = failOutcome.URI
 		}
 	}
 
-	result.IsPass = true
-	for _, outcome := range analyzer.Outcomes {
-		if outcome.Pass != nil {
-			result.Message = outcome.Pass.Message
-			result.URI = outcome.Pass.URI
+	if result.Message == "" {
+		switch {
+		case result.IsPass:
+			result.Message = fmt.Sprintf("Secret %s was found in namespace %s", analyzer.SecretName, analyzer.Namespace)
+		case analyzer.Key != "" && foundSecret.SecretExists:
+			result.Message = fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName)
+		default:
+			result.Message = fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace)
 		}
 	}
 
