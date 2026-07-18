@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/go-getter v1.8.6
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/longhorn/go-common-libs v0.0.0-20260716070930-439af9b33f41
+	github.com/longhorn/go-common-libs v0.0.0-20260717062941-2c0ab58da729
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.23
 	github.com/microsoft/go-mssqldb v1.10.0
