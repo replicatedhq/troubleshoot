@@ -23,7 +23,7 @@ stages:
         Workflow task: run the Go dependency update maintenance workflow for Troubleshoot.
 
         This is an unattended dependency maintenance workflow. Scope: Go
-        dependency updates for the top-level go.mod/go.sum only. After updates
+        dependency updates for the top-level go.mod/go.sum plus examples/sdk/helm-template. After updates
         are applied, you will review the changes, fix any compatibility issues,
         validate with make build and make test, and open one grouped PR.
 
