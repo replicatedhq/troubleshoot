@@ -302,6 +302,128 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			wantErr: true, // TODO: should this be a not found error? This will not work with selectors.
 		},
+		{
+			name: "combined fail and pass in a single outcome, secret found uses the pass outcome",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Not found",
+						},
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Found",
+							URI:     "https://example.com/found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: true,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				Message: "Found",
+				URI:     "https://example.com/found",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "combined fail and pass in a single outcome, secret not found uses the fail outcome",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Not found",
+						},
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Found",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: false,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsFail:  true,
+				Message: "Not found",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "secret found with URI-only pass outcome preserves the empty message and URI",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							URI: "https://example.com/pass",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: true,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				Message: "",
+				URI:     "https://example.com/pass",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "secret not found with URI-only fail outcome preserves the empty message and URI",
+			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				Namespace:  "test-namespace",
+				SecretName: "test-secret",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							URI: "https://example.com/fail",
+						},
+					},
+				},
+			},
+			mockFiles: map[string][]byte{
+				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, collect.SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					SecretExists: false,
+				}),
+			},
+			want: &AnalyzeResult{
+				IsFail:  true,
+				Message: "",
+				URI:     "https://example.com/fail",
+				Title:   "Secret test-secret",
+				IconKey: "kubernetes_analyze_secret",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
