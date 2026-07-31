@@ -167,7 +167,7 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
-			name: "not found with no fail outcome falls back to default message instead of panicking",
+			name: "not found with no fail outcome leaves the message empty instead of fabricating one",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret",
@@ -191,14 +191,14 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsFail:  true,
-				Message: "Secret does-not-exist was not found in namespace default",
+				Message: "",
 				Title:   "Optional Secret",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
 		},
 		{
-			name: "key not found with no fail outcome falls back to default message instead of panicking",
+			name: "key not found with no fail outcome leaves the message empty instead of fabricating one",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret Key",
@@ -225,14 +225,14 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsFail:  true,
-				Message: "Key missing-key was not found in secret test-namespace/test-secret",
+				Message: "",
 				Title:   "Optional Secret Key",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
 		},
 		{
-			name: "found with only fail outcome configured uses default pass message, not the fail outcome's message",
+			name: "found with only fail outcome configured leaves the message empty, not the fail outcome's message",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
@@ -253,14 +253,14 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsPass:  true,
-				Message: "Secret test-secret was found in namespace test-namespace",
+				Message: "",
 				Title:   "Secret test-secret",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
 		},
 		{
-			name: "spec with neither fail nor pass outcome returns nil so framework can surface the missing-outcome error",
+			name: "spec with neither fail nor pass outcome returns an error so the framework surfaces the misconfiguration",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Misconfigured",
@@ -276,7 +276,7 @@ func Test_analyzeSecret(t *testing.T) {
 					SecretExists: false,
 				}),
 			},
-			want: nil,
+			wantErr: true,
 		},
 		{
 			name: "key not found secret not found",

@@ -59,7 +59,9 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 
 	// The secret analyzer only supports fail (not found) and pass (found) outcomes
 	// per https://troubleshoot.sh/docs/analyze/secrets. If the spec contains
-	// neither, return nil and let the framework surface the missing-outcome error.
+	// neither, return an explicit error: returning (nil, nil) is swallowed by the
+	// Analyze wrapper into an empty result slice, so the misconfiguration would
+	// surface as neither a result nor an error.
 	// Capture fail and pass independently: a single outcome object may set both,
 	// so an else-if here would silently drop the second one.
 	var failOutcome, passOutcome *troubleshootv1beta2.SingleOutcome
@@ -72,7 +74,7 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		}
 	}
 	if failOutcome == nil && passOutcome == nil {
-		return nil, nil
+		return nil, fmt.Errorf("secret analyzer %s/%s must define at least one pass or fail outcome", analyzer.Namespace, analyzer.SecretName)
 	}
 
 	result := AnalyzeResult{
@@ -85,34 +87,21 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 	if secretFound && analyzer.Key != "" {
 		secretFound = foundSecret.Key == analyzer.Key && foundSecret.KeyExists
 	}
-	// Track whether the matched branch had a configured outcome, so we only fall
-	// back to a default message when none was supplied — a configured outcome with
-	// an intentionally empty message (e.g. URI-only) must be preserved verbatim.
-	outcomeConfigured := false
+	// Assign the configured outcome verbatim. A configured outcome with an
+	// intentionally empty message (e.g. a URI-only outcome) is preserved as-is;
+	// we do not fabricate a default message — an empty message is treated as
+	// intentional, consistent with the analyzer contract.
 	if secretFound {
 		result.IsPass = true
 		if passOutcome != nil {
 			result.Message = passOutcome.Message
 			result.URI = passOutcome.URI
-			outcomeConfigured = true
 		}
 	} else {
 		result.IsFail = true
 		if failOutcome != nil {
 			result.Message = failOutcome.Message
 			result.URI = failOutcome.URI
-			outcomeConfigured = true
-		}
-	}
-
-	if !outcomeConfigured {
-		switch {
-		case result.IsPass:
-			result.Message = fmt.Sprintf("Secret %s was found in namespace %s", analyzer.SecretName, analyzer.Namespace)
-		case analyzer.Key != "" && foundSecret.SecretExists:
-			result.Message = fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName)
-		default:
-			result.Message = fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace)
 		}
 	}
 
