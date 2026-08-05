@@ -87,21 +87,38 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 	if secretFound && analyzer.Key != "" {
 		secretFound = foundSecret.Key == analyzer.Key && foundSecret.KeyExists
 	}
-	// Assign the configured outcome verbatim. A configured outcome with an
-	// intentionally empty message (e.g. a URI-only outcome) is preserved as-is;
-	// we do not fabricate a default message — an empty message is treated as
-	// intentional, consistent with the analyzer contract.
+	// Use the matched branch's configured outcome verbatim, tracking whether one
+	// was actually present. A configured outcome with an intentionally empty
+	// message (e.g. a URI-only outcome) is preserved as-is. But when the matched
+	// branch has NO configured outcome at all — e.g. a pass-only spec that took
+	// the fail path, or a fail-only spec that passed — the empty message is not
+	// an intentional choice, so fall back to a default diagnostic. An absent
+	// outcome is not the same as an intentionally empty one.
+	outcomeConfigured := false
 	if secretFound {
 		result.IsPass = true
 		if passOutcome != nil {
 			result.Message = passOutcome.Message
 			result.URI = passOutcome.URI
+			outcomeConfigured = true
 		}
 	} else {
 		result.IsFail = true
 		if failOutcome != nil {
 			result.Message = failOutcome.Message
 			result.URI = failOutcome.URI
+			outcomeConfigured = true
+		}
+	}
+
+	if !outcomeConfigured {
+		switch {
+		case result.IsPass:
+			result.Message = fmt.Sprintf("Secret %s was found in namespace %s", analyzer.SecretName, analyzer.Namespace)
+		case analyzer.Key != "" && foundSecret.SecretExists:
+			result.Message = fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName)
+		default:
+			result.Message = fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace)
 		}
 	}
 

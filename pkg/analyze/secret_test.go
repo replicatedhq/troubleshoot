@@ -167,7 +167,7 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 		},
 		{
-			name: "not found with no fail outcome leaves the message empty instead of fabricating one",
+			name: "not found with no fail outcome falls back to a default message (no configured outcome for this branch)",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret",
@@ -191,14 +191,14 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsFail:  true,
-				Message: "",
+				Message: "Secret does-not-exist was not found in namespace default",
 				Title:   "Optional Secret",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
 		},
 		{
-			name: "key not found with no fail outcome leaves the message empty instead of fabricating one",
+			name: "key not found with no fail outcome falls back to a default message (no configured outcome for this branch)",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "Optional Secret Key",
@@ -225,14 +225,14 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsFail:  true,
-				Message: "",
+				Message: "Key missing-key was not found in secret test-namespace/test-secret",
 				Title:   "Optional Secret Key",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
 		},
 		{
-			name: "found with only fail outcome configured leaves the message empty, not the fail outcome's message",
+			name: "found with only fail outcome configured falls back to the default pass message, not the fail outcome's message",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
@@ -253,7 +253,7 @@ func Test_analyzeSecret(t *testing.T) {
 			},
 			want: &AnalyzeResult{
 				IsPass:  true,
-				Message: "",
+				Message: "Secret test-secret was found in namespace test-namespace",
 				Title:   "Secret test-secret",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
