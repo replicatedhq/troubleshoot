@@ -145,6 +145,15 @@ func CollectHostWithContext(
 		span.End()
 	}
 
+	// Local host preflight collectors are the only collection path (cluster,
+	// remote host, in-cluster support bundle) that skipped redaction entirely.
+	// A `run` collector's captured environment in particular can carry
+	// credentials verbatim (e.g. HTTPS_PROXY with embedded Basic Auth) into
+	// the bundle. See https://github.com/replicatedhq/troubleshoot/issues/2100.
+	if err := collect.RedactResult(opts.BundlePath, collect.CollectorResult(allCollectedData), nil); err != nil {
+		return nil, errors.Wrap(err, "failed to redact host collector results")
+	}
+
 	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
 	collectResult.AllCollectedData = allCollectedData
 

@@ -1,6 +1,9 @@
 package preflight
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -208,4 +211,47 @@ func TestCollectWithContext_PreservesOrderAfterClusterResources(t *testing.T) {
 	if dataIndex >= 0 && secretIndex >= 0 {
 		assert.Less(t, dataIndex, secretIndex, "data collectors should come before secret collectors, preserving relative order")
 	}
+}
+
+// TestCollectHostWithContext_RedactsSensitiveEnvValues verifies that a `run`
+// host collector's captured environment is redacted before being written to
+// the bundle. CollectHostWithContext is the only collection path (cluster,
+// host, remote) that skipped redaction entirely: every env var passed to the
+// command -- including credentials embedded in a proxy URL -- landed
+// verbatim in <collectorName>-info.json.
+func TestCollectHostWithContext_RedactsSensitiveEnvValues(t *testing.T) {
+	bundlePath := t.TempDir()
+
+	hostPreflight := &troubleshootv1beta2.HostPreflight{
+		Spec: troubleshootv1beta2.HostPreflightSpec{
+			Collectors: []*troubleshootv1beta2.HostCollect{
+				{
+					HostRun: &troubleshootv1beta2.HostRun{
+						HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+							CollectorName: "proxy-credential-check",
+						},
+						Command:          "sh",
+						Args:             []string{"-c", "echo ok"},
+						IgnoreParentEnvs: true,
+						Env: []string{
+							"HTTPS_PROXY=http://alice:sw0rdfish@proxy.example.com:3128",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := CollectHostWithContext(context.Background(), CollectOpts{
+		ProgressChan: make(chan interface{}, 100),
+		BundlePath:   bundlePath,
+	}, hostPreflight)
+	require.NoError(t, err)
+
+	infoPath := filepath.Join(bundlePath, "host-collectors/run-host/proxy-credential-check-info.json")
+	b, err := os.ReadFile(infoPath)
+	require.NoError(t, err)
+
+	assert.NotContains(t, string(b), "sw0rdfish", "proxy credential leaked unredacted into the host preflight bundle")
+	assert.Contains(t, string(b), "***HIDDEN***", "expected the built-in URL-userinfo redactor to mask the credential")
 }
