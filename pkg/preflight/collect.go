@@ -145,6 +145,9 @@ func CollectHostWithContext(
 		span.End()
 	}
 
+	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
+	collectResult.AllCollectedData = allCollectedData
+
 	// Local host preflight collectors are the only collection path (cluster,
 	// remote host, in-cluster support bundle) that skipped redaction entirely.
 	// A `run` collector's captured environment in particular can carry
@@ -159,9 +162,6 @@ func CollectHostWithContext(
 		return collectResult, err
 	}
 	span.End()
-
-	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
-	collectResult.AllCollectedData = allCollectedData
 
 	return collectResult, nil
 }
