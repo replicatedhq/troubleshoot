@@ -150,9 +150,15 @@ func CollectHostWithContext(
 	// A `run` collector's captured environment in particular can carry
 	// credentials verbatim (e.g. HTTPS_PROXY with embedded Basic Auth) into
 	// the bundle. See https://github.com/replicatedhq/troubleshoot/issues/2100.
+	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
+	span.SetAttributes(attribute.String("type", "Redactors"))
 	if err := collect.RedactResult(opts.BundlePath, collect.CollectorResult(allCollectedData), nil); err != nil {
-		return nil, errors.Wrap(err, "failed to redact host collector results")
+		err = errors.Wrap(err, "failed to redact host collector results")
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
+		return collectResult, err
 	}
+	span.End()
 
 	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
 	collectResult.AllCollectedData = allCollectedData
