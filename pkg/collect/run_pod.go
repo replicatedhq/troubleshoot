@@ -69,7 +69,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 		if err != nil {
 			return
 		}
-		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
+		result, err = savePodDetails(ctx, client, result, c.BundlePath, pod, c.Collector)
 		if err != nil {
 			klog.Errorf("failed to save pod details: %v", err)
 		}
@@ -407,7 +407,7 @@ func RunPodLogsWithOptions(ctx context.Context, client v1.CoreV1Interface, podSp
 	return io.ReadAll(logs)
 }
 
-func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
+func savePodDetails(ctx context.Context, client kubernetes.Interface, output CollectorResult, bundlePath string, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
 	podStatus, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod")
@@ -418,7 +418,12 @@ func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output Co
 		return nil, errors.Wrap(err, "failed to get pod events")
 	}
 
-	podBytes, err := json.MarshalIndent(podStatus, "", "  ")
+	// The full pod Spec can contain sensitive data such as env vars, commands, args,
+	// volumes, and image pull secrets. Strip it before saving the pod to the bundle.
+	sanitizedPod := *podStatus
+	sanitizedPod.Spec = corev1.PodSpec{}
+
+	podBytes, err := json.MarshalIndent(sanitizedPod, "", "  ")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal pod status")
 	}
