@@ -246,7 +246,8 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 		--tlog-upload \
 		--yes \
 		--rekor-url=https://rekor.sigstore.dev \
-		sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
+		--bundle sbom/assets/troubleshoot-sbom.tgz.bundle \
+		sbom/assets/troubleshoot-sbom.tgz
 	cosign public-key --key cosign.key --outfile sbom/assets/key.pub
 
 .PHONY: get-govulncheck
