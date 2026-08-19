@@ -37,7 +37,6 @@ jobs:
   build-package:
     needs: validate-version
     runs-on: ubuntu-22.04
-    continue-on-error: true
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -69,7 +68,6 @@ jobs:
     needs: build-package
     if: ${{ !cancelled() && needs.build-package.result == 'success' }}
     runs-on: ubuntu-22.04
-    continue-on-error: true
     strategy:
       matrix:
         image-name:

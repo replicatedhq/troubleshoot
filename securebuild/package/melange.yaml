@@ -94,14 +94,6 @@ subpackages:
       pipeline:
         - runs: /usr/bin/collect --help
 
-update:
-  enabled: true
-  github:
-    identifier: replicatedhq/troubleshoot
-    use-tag: true
-    strip-prefix: v
-    tag-filter: v${{vars.major-minor-version}}.
-
 test:
   environment:
     contents:
