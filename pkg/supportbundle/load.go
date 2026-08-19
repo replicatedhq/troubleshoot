@@ -20,6 +20,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// loadFromSecret is a package-level hook so tests can stub out cluster access.
+var loadFromSecret = specs.LoadFromSecret
+
 // GetSupportBundleFromURI downloads and parses a support bundle from a URI and returns a SupportBundle object
 func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBundle, error) {
 	collectorContent, err := LoadSupportBundleSpec(bundleURI)
@@ -165,6 +168,29 @@ func LoadSupportBundleSpec(arg string) ([]byte, error) {
 }
 
 func LoadRedactorSpec(arg string) ([]byte, error) {
+	if strings.HasPrefix(arg, "secret/") {
+		// format secret/namespace-name/secret-name[/data-key]
+		pathParts := strings.Split(arg, "/")
+		if len(pathParts) > 4 {
+			return nil, errors.Errorf("secret path %s must have at most 4 components", arg)
+		}
+		if len(pathParts) < 3 {
+			return nil, errors.Errorf("secret path %s must have at least 3 components", arg)
+		}
+
+		dataKey := "redactor-spec"
+		if len(pathParts) == 4 {
+			dataKey = pathParts[3]
+		}
+
+		spec, err := loadFromSecret(pathParts[1], pathParts[2], dataKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get spec from secret")
+		}
+
+		return spec, nil
+	}
+
 	if strings.HasPrefix(arg, "configmap/") {
 		// format configmap/namespace-name/configmap-name[/data-key]
 		pathParts := strings.Split(arg, "/")
