@@ -59,6 +59,14 @@ jobs:
         with:
           krew_template_file: deploy/krew/support-bundle.yaml
 
+  securebuild:
+    if: ${{ !contains(github.ref_name, '-') }}
+    uses: ./.github/workflows/publish-securebuild.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets:
+      SECUREBUILD_API_TOKEN: ${{ secrets.SECUREBUILD_API_TOKEN }}
+
   notify:
     if: ${{ !contains(github.ref_name, '-') }}
     uses: replicatedhq/reusable-workflows/.github/workflows/notify-release.yml@0432fb838fc83852b78be97a150b35991a85d56f

@@ -1,0 +1,114 @@
+package:
+  name: troubleshoot-head
+  version: "1000.0.0"
+  epoch: 0
+  description: Troubleshoot tools for collecting and analyzing Kubernetes cluster diagnostics
+  copyright:
+    - license: Apache-2.0
+      attestation: "SecureBuild (https://securebuild.com)"
+  dependencies:
+    runtime:
+      - ${{package.name}}-support-bundle=${{package.full-version}}
+      - ${{package.name}}-preflight=${{package.full-version}}
+      - ${{package.name}}-collect=${{package.full-version}}
+    provides:
+      - troubleshoot=${{package.full-version}}
+
+var-transforms:
+  - from: ${{package.version}}
+    match: ^(\d+\.\d+)\.\d+$
+    replace: "$1"
+    to: major-minor-version
+
+environment:
+  contents:
+    repositories:
+      - https://apk.cve0.io
+    keyring:
+      - https://apk.cve0.io/key/cve0-signing.rsa.pub
+    packages:
+      - busybox
+      - build-base
+      - ca-certificates-bundle
+      - go
+      - git
+      - bash
+  environment:
+    CGO_ENABLED: "0"
+    GOPROXY: https://proxy.golang.org,direct
+    GOSUMDB: sum.golang.org
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/replicatedhq/troubleshoot
+      tag: v${{package.version}}
+      depth: 1
+
+  - name: Build troubleshoot binaries
+    runs: |
+      export PATH="/usr/bin:$PATH"
+      export VERSION="v${{package.version}}"
+      make -j bin/support-bundle bin/preflight bin/collect
+
+subpackages:
+  - name: ${{package.name}}-support-bundle
+    description: Support bundle collector for Kubernetes cluster diagnostics
+    dependencies:
+      provides:
+        - troubleshoot-support-bundle=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/bin
+          cp bin/support-bundle ${{targets.subpkgdir}}/usr/bin/support-bundle
+      - uses: strip
+    test:
+      pipeline:
+        - runs: /usr/bin/support-bundle --help
+
+  - name: ${{package.name}}-preflight
+    description: Preflight checker for Kubernetes cluster requirements
+    dependencies:
+      provides:
+        - troubleshoot-preflight=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/bin
+          cp bin/preflight ${{targets.subpkgdir}}/usr/bin/preflight
+      - uses: strip
+    test:
+      pipeline:
+        - runs: /usr/bin/preflight --help
+
+  - name: ${{package.name}}-collect
+    description: Collector for Kubernetes cluster data
+    dependencies:
+      provides:
+        - troubleshoot-collect=${{package.full-version}}
+    pipeline:
+      - runs: |
+          mkdir -p ${{targets.subpkgdir}}/usr/bin
+          cp bin/collect ${{targets.subpkgdir}}/usr/bin/collect
+      - uses: strip
+    test:
+      pipeline:
+        - runs: /usr/bin/collect --help
+
+update:
+  enabled: true
+  github:
+    identifier: replicatedhq/troubleshoot
+    use-tag: true
+    strip-prefix: v
+    tag-filter: v${{vars.major-minor-version}}.
+
+test:
+  environment:
+    contents:
+      packages:
+        - ${{package.name}}=${{package.full-version}}
+  pipeline:
+    - runs: |
+        /usr/bin/support-bundle --help
+        /usr/bin/preflight --help
+        /usr/bin/collect --help

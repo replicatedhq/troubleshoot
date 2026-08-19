@@ -1,0 +1,51 @@
+contents:
+  repositories:
+    - https://apk.cve0.io
+  keyring:
+    - https://apk.cve0.io/key/cve0-signing.rsa.pub
+  packages:
+    - troubleshoot
+    - bash
+    - kmod
+    - ca-certificates-bundle
+    - securebuild-baselayout
+    - busybox
+
+cmd: bash
+
+work-dir: /
+
+archs:
+  - x86_64
+  - aarch64
+
+environment:
+  PATH: /troubleshoot:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+paths:
+  - path: /troubleshoot
+    type: directory
+    uid: 0
+    gid: 0
+    permissions: 0o755
+
+  - path: /troubleshoot/support-bundle
+    type: symlink
+    source: /usr/bin/support-bundle
+    permissions: 0o755
+
+  - path: /troubleshoot/preflight
+    type: symlink
+    source: /usr/bin/preflight
+    permissions: 0o755
+
+  - path: /troubleshoot/collect
+    type: symlink
+    source: /usr/bin/collect
+    permissions: 0o755
+
+annotations:
+  org.opencontainers.image.title: Troubleshoot (SecureBuild)
+  org.opencontainers.image.description: Troubleshoot tools for collecting and analyzing Kubernetes cluster diagnostics
+  org.opencontainers.image.source: https://github.com/replicatedhq/troubleshoot
+  org.opencontainers.image.vendor: SecureBuild
