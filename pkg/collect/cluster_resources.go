@@ -2294,23 +2294,18 @@ func mutatingWebhookConfigurations(ctx context.Context, client kubernetes.Interf
 	return b, nil
 }
 
-// storeCustomResource stores a custom resource as JSON and YAML
-// We use both formats for backwards compatibility. This way we
-// avoid breaking existing tools and analysers that already rely on
-// the YAML format.
+// storeCustomResource stores a custom resource as JSON only.
+// JSON is valid YAML, so any analyzer expecting YAML can consume the JSON
+// file directly. We no longer write a separate YAML file because the
+// built-in redactors are authored for JSON, and the duplicate YAML copy
+// would otherwise be left unredacted.
 func storeCustomResource(name string, objects any, m map[string][]byte) error {
 	j, err := json.MarshalIndent(objects, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	y, err := yaml.Marshal(objects)
-	if err != nil {
-		return err
-	}
-
 	m[fmt.Sprintf("%s.json", name)] = j
-	m[fmt.Sprintf("%s.yaml", name)] = y
 	return nil
 }
 

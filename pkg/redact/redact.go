@@ -35,6 +35,26 @@ func init() {
 	}
 }
 
+// kurlInstallerRedactors are built-in redactors scoped to the kurl installer
+// custom resource. They previously applied only to the YAML copy of custom
+// resources; now that the collector emits only JSON, they target the JSON file.
+var kurlInstallerRedactors = []*troubleshootv1beta2.Redact{
+	{
+		Name: "Redact kurl installer fields",
+		FileSelector: troubleshootv1beta2.FileSelector{
+			File: fmt.Sprintf("%s/%s/%s/*.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+		},
+		Removals: troubleshootv1beta2.Removals{
+			Regex: []troubleshootv1beta2.Regex{
+				{Redactor: `(?i)("bootstrapToken"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("certKey"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("kubeadmToken"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("kubectl\.kubernetes\.io/last-applied-configuration"\s*:\s*")(?P<mask>(?:\\.|[^"\\])*)(")`},
+			},
+		},
+	},
+}
+
 // A regex cache to avoid recompiling the same regexes over and over
 func compileRegex(pattern string) (*regexp.Regexp, error) {
 	regexCacheLock.Lock()
@@ -440,39 +460,12 @@ func getRedactors(path string) ([]Redactor, error) {
 		redactors = append(redactors, r)
 	}
 
-	customResources := []struct {
-		resource string
-		yamlPath string
-	}{
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.bootstrapToken",
-		},
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.certKey",
-		},
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.kubeadmToken",
-		},
+	// Add built-in redactors that are scoped to specific custom resource files.
+	scopedRedactors, err := buildAdditionalRedactors(path, kurlInstallerRedactors)
+	if err != nil {
+		return nil, err
 	}
-
-	uniqueCRs := map[string]bool{}
-	for _, cr := range customResources {
-		fileglob := fmt.Sprintf("%s/%s/%s/*.yaml", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, cr.resource)
-		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
-
-		// redact kubectl last applied annotation once for each resource since it contains copies of
-		// redacted fields
-		if !uniqueCRs[cr.resource] {
-			uniqueCRs[cr.resource] = true
-			redactors = append(redactors, &YamlRedactor{
-				filePath: fileglob,
-				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
-			})
-		}
-	}
+	redactors = append(redactors, scopedRedactors...)
 
 	return redactors, nil
 }

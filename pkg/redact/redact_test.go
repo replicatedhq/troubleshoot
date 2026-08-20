@@ -1874,3 +1874,38 @@ func Test_redactMatchesPath(t *testing.T) {
 		})
 	}
 }
+
+func Test_RedactKurlInstallerJSON(t *testing.T) {
+	input := `[
+  {
+    "metadata": {
+      "name": "kurl",
+      "annotations": {
+        "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"cluster.kurl.sh/v1beta1\",\"kind\":\"Installer\",\"spec\":{\"kubernetes\":{\"bootstrapToken\":\"abc\",\"certKey\":\"def\",\"kubeadmToken\":\"ghi\"}}}"
+      }
+    },
+    "spec": {
+      "kubernetes": {
+        "bootstrapToken": "abc",
+        "certKey": "def",
+        "kubeadmToken": "ghi"
+      }
+    }
+  }
+]`
+
+	r, err := Redact(strings.NewReader(input), "cluster-resources/custom-resources/installers.cluster.kurl.sh/default.json", nil)
+	require.NoError(t, err)
+
+	out, err := ioutil.ReadAll(r)
+	require.NoError(t, err)
+
+	outStr := string(out)
+	require.NotContains(t, outStr, `"abc"`)
+	require.NotContains(t, outStr, `"def"`)
+	require.NotContains(t, outStr, `"ghi"`)
+	require.Contains(t, outStr, `"bootstrapToken": "***HIDDEN***"`)
+	require.Contains(t, outStr, `"certKey": "***HIDDEN***"`)
+	require.Contains(t, outStr, `"kubeadmToken": "***HIDDEN***"`)
+	require.Contains(t, outStr, `"kubectl.kubernetes.io/last-applied-configuration": "***HIDDEN***"`)
+}
