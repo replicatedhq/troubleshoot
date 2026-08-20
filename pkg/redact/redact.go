@@ -37,12 +37,18 @@ func init() {
 
 // kurlInstallerRedactors are built-in redactors scoped to the kurl installer
 // custom resource. They previously applied only to the YAML copy of custom
-// resources; now that the collector emits only JSON, they target the JSON file.
+// resources; now they target the JSON file (and the YAML symlink that points to it).
+// The installer CRD can be either cluster-scoped (installers.cluster.kurl.sh.json)
+// or namespaced (installers.cluster.kurl.sh/<namespace>.json), so both patterns are
+// included.
 var kurlInstallerRedactors = []*troubleshootv1beta2.Redact{
 	{
 		Name: "Redact kurl installer fields",
 		FileSelector: troubleshootv1beta2.FileSelector{
-			File: fmt.Sprintf("%s/%s/%s/*.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+			Files: []string{
+				fmt.Sprintf("%s/%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+				fmt.Sprintf("%s/%s/%s/*.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+			},
 		},
 		Removals: troubleshootv1beta2.Removals{
 			Regex: []troubleshootv1beta2.Regex{

@@ -1894,18 +1894,29 @@ func Test_RedactKurlInstallerJSON(t *testing.T) {
   }
 ]`
 
-	r, err := Redact(strings.NewReader(input), "cluster-resources/custom-resources/installers.cluster.kurl.sh/default.json", nil)
-	require.NoError(t, err)
+	cases := []string{
+		// Cluster-scoped installer (file directly under custom-resources)
+		"cluster-resources/custom-resources/installers.cluster.kurl.sh.json",
+		// Namespaced installer (file under a per-CRD directory)
+		"cluster-resources/custom-resources/installers.cluster.kurl.sh/default.json",
+	}
 
-	out, err := ioutil.ReadAll(r)
-	require.NoError(t, err)
+	for _, path := range cases {
+		t.Run(path, func(t *testing.T) {
+			r, err := Redact(strings.NewReader(input), path, nil)
+			require.NoError(t, err)
 
-	outStr := string(out)
-	require.NotContains(t, outStr, `"abc"`)
-	require.NotContains(t, outStr, `"def"`)
-	require.NotContains(t, outStr, `"ghi"`)
-	require.Contains(t, outStr, `"bootstrapToken": "***HIDDEN***"`)
-	require.Contains(t, outStr, `"certKey": "***HIDDEN***"`)
-	require.Contains(t, outStr, `"kubeadmToken": "***HIDDEN***"`)
-	require.Contains(t, outStr, `"kubectl.kubernetes.io/last-applied-configuration": "***HIDDEN***"`)
+			out, err := ioutil.ReadAll(r)
+			require.NoError(t, err)
+
+			outStr := string(out)
+			require.NotContains(t, outStr, `"abc"`)
+			require.NotContains(t, outStr, `"def"`)
+			require.NotContains(t, outStr, `"ghi"`)
+			require.Contains(t, outStr, `"bootstrapToken": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"certKey": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"kubeadmToken": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"kubectl.kubernetes.io/last-applied-configuration": "***HIDDEN***"`)
+		})
+	}
 }

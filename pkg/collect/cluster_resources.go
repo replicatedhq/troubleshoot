@@ -294,7 +294,18 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// crs
 	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k), bytes.NewBuffer(v))
+		jsonPath := path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k)
+		output.SaveResult(c.BundlePath, jsonPath, bytes.NewBuffer(v))
+
+		// Keep a YAML symlink for backward compatibility. It points at the JSON
+		// file, so any analyzer that expects YAML can still read it, and the
+		// content is redacted through the JSON copy.
+		if strings.HasSuffix(k, ".json") {
+			yamlPath := path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, strings.TrimSuffix(k, ".json")+".yaml")
+			if err := output.SymLinkResult(c.BundlePath, yamlPath, jsonPath); err != nil {
+				klog.V(2).Infof("failed to create YAML symlink for %s: %v", jsonPath, err)
+			}
+		}
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES)), marshalErrors(crErrors))
 
