@@ -294,7 +294,18 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// crs
 	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k), bytes.NewBuffer(v))
+		jsonPath := path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k)
+		output.SaveResult(c.BundlePath, jsonPath, bytes.NewBuffer(v))
+
+		// Keep a YAML symlink for backward compatibility. It points at the JSON
+		// file, so any analyzer that expects YAML can still read it, and the
+		// content is redacted through the JSON copy.
+		if strings.HasSuffix(k, ".json") {
+			yamlPath := path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, strings.TrimSuffix(k, ".json")+".yaml")
+			if err := output.SymLinkResult(c.BundlePath, yamlPath, jsonPath); err != nil {
+				klog.V(2).Infof("failed to create YAML symlink for %s: %v", jsonPath, err)
+			}
+		}
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES)), marshalErrors(crErrors))
 
@@ -2294,23 +2305,18 @@ func mutatingWebhookConfigurations(ctx context.Context, client kubernetes.Interf
 	return b, nil
 }
 
-// storeCustomResource stores a custom resource as JSON and YAML
-// We use both formats for backwards compatibility. This way we
-// avoid breaking existing tools and analysers that already rely on
-// the YAML format.
+// storeCustomResource stores a custom resource as JSON only.
+// JSON is valid YAML, so any analyzer expecting YAML can consume the JSON
+// file directly. We no longer write a separate YAML file because the
+// built-in redactors are authored for JSON, and the duplicate YAML copy
+// would otherwise be left unredacted.
 func storeCustomResource(name string, objects any, m map[string][]byte) error {
 	j, err := json.MarshalIndent(objects, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	y, err := yaml.Marshal(objects)
-	if err != nil {
-		return err
-	}
-
 	m[fmt.Sprintf("%s.json", name)] = j
-	m[fmt.Sprintf("%s.yaml", name)] = y
 	return nil
 }
 
