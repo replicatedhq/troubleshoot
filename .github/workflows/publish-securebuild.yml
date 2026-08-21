@@ -1,8 +1,8 @@
 name: publish-securebuild
 
 env:
-  SECUREBUILD_CLI_VERSION: v0.0.496
-  SECUREBUILD_CLI_SHA256: af016db0fa16d51f68f443dea31a63152ad23504bb296137b01f270102011f79
+  SECUREBUILD_CLI_VERSION: v0.0.498
+  SECUREBUILD_CLI_SHA256: d259aa99d85aef957fe1e40c6f26e1983cc7fd72277e08599a82adc6681d3b37
 
 on:
   workflow_call:
@@ -88,7 +88,14 @@ jobs:
           SECUREBUILD_API_TOKEN: ${{ secrets.SECUREBUILD_API_TOKEN }}
           VERSION: ${{ needs.build-package.outputs.version }}
         run: |
+          IMAGE_VERSION="${VERSION#v}"
+          MAJOR_MINOR_VERSION="${IMAGE_VERSION%.*}"
+          MAJOR_VERSION="${IMAGE_VERSION%%.*}"
+
           ./securebuild build image \
             --image-name "$IMAGE_NAME" \
             --tag "$VERSION" \
+            --image-tag "$MAJOR_MINOR_VERSION" \
+            --image-tag "$MAJOR_VERSION" \
+            --image-tag latest \
             --api-token "$SECUREBUILD_API_TOKEN"
