@@ -47,7 +47,7 @@ require (
 	github.com/vmware-tanzu/velero v1.18.2
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/sdk v1.45.0
-	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
+	golang.org/x/exp v0.0.0-20260820142414-ca536658362e
 	golang.org/x/mod v0.40.0
 	golang.org/x/sync v0.22.0
 	gopkg.in/yaml.v2 v2.4.0
