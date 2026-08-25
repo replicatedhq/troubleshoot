@@ -30,7 +30,7 @@ require (
 	github.com/longhorn/go-common-libs v0.0.0-20260730002911-add09e6eb92c
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.24
-	github.com/microsoft/go-mssqldb v1.10.0
+	github.com/microsoft/go-mssqldb v1.11.0
 	github.com/miekg/dns v1.1.73
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pkg/errors v0.9.1
