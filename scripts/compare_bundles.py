@@ -126,6 +126,7 @@ class BundleComparator:
                 "run-daemonset-example/*.log",  # Node IDs vary between clusters
                 "goldpinger/*.json",  # Goldpinger may fail due to timing
                 "cluster-resources/pods/logs/**/*.log",  # Pod logs vary (ephemeral pods)
+                "cluster-resources/custom-resources/*/*",  # CRD-collected custom resources vary by installed CRDs
             ]
 
             for file in sorted(missing_in_current):
