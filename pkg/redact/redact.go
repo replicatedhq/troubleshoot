@@ -314,10 +314,11 @@ func getRedactors(path string) ([]Redactor, error) {
 			},
 			name: "Redact database connection strings that contain username and password",
 		},
-		// user:password@tcp(host:3309), with no trailing /db-name
+		// user:password@tcp(host:3309), with no trailing /db-name.
+		// the password runs to the @, so that slashes and colons in it are masked too.
 		{
 			regex: LineRedactor{
-				regex: `(?P<mask>[^:\"\/\s]*){1}(:)(?P<mask>[^:\"\/\s]*){1}(@tcp\()`,
+				regex: `(?P<mask>[^:\"\/\s]*){1}(:)(?P<mask>[^@\"\s]*){1}(@tcp\()`,
 				scan:  `@tcp`,
 			},
 			name: "Redact database connection strings that contain username and password",

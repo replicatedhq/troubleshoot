@@ -1817,6 +1817,16 @@ func Test_DefaultRedactors_ConnectionStrings(t *testing.T) {
 			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/",
 		},
 		{
+			name:  "mysql dsn with a slash in the password",
+			input: "dbuser:this/is/a/secret@tcp(dbserver.org:3309)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "mysql dsn with a slash in the password and a database name",
+			input: "dbuser:this/is/a/secret@tcp(dbserver.org:3309)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/blog_production",
+		},
+		{
 			name:  "mysql dsn in a log line",
 			input: "INFO connecting to dbuser:thisisasecret@tcp(dbserver.org:3309)",
 			want:  "INFO connecting to ***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
