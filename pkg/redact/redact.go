@@ -312,20 +312,33 @@ func getRedactors(path string) ([]Redactor, error) {
 			},
 			name: "Redact values for environment variables with names beginning with 'user'",
 		},
-		// connection strings with username and password
+		// credentials in a URI of any scheme, with or without a trailing path.
+		// the fuller redactors below mask the host and database name as well,
+		// but only match when a database name is present.
 		// http://user:password@host:8888
+		// postgres://user:password@host:5432
 		{
 			regex: LineRedactor{
-				regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
-				scan:  `https?|ftp`,
+				regex: `(?i)([a-z][a-z\d+.\-]*)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+				scan:  `:\/\/[^:\"\/]+:[^@\"\/]+@`,
 			},
 			name: "Redact connection strings with username and password",
 		},
 		// user:password@tcp(host:3309)/db-name
 		{
 			regex: LineRedactor{
-				regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-				scan:  `@tcp`,
+				regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@(?:tcp[46]?|unix)\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
+				scan:  `@(?:tcp|unix)`,
+			},
+			name: "Redact database connection strings that contain username and password",
+		},
+		// user:password@tcp(host:3309), with no trailing /db-name. tcp4, tcp6 and
+		// unix sockets are the other network types the mysql driver accepts.
+		// the password runs to the @, so that slashes and colons in it are masked too.
+		{
+			regex: LineRedactor{
+				regex: `(?P<mask>[^:\"\/\s]*){1}(:)(?P<mask>[^@\"\s]*){1}(@(?:tcp[46]?|unix)\()`,
+				scan:  `@(?:tcp|unix)`,
 			},
 			name: "Redact database connection strings that contain username and password",
 		},
