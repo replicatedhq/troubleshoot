@@ -131,7 +131,7 @@ func TestNewSingleLineRedactor(t *testing.T) {
 		},
 		{
 			name:        "Redact connection strings with username and password",
-			re:          `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+			re:          `(?i)([a-z][a-z\d+.\-]*)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
 			inputString: `http://user:password@host:8888`,
 			wantString:  "http://***HIDDEN***:***HIDDEN***@host:8888", // No trailing newline in input, so none in output
 			wantRedactions: RedactionList{
@@ -275,8 +275,8 @@ func TestNewSingleLineRedactor(t *testing.T) {
 		},
 		{
 			name:        "Redact connection strings With Scan",
-			re:          `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
-			scan:        `https?|ftp`,
+			re:          `(?i)([a-z][a-z\d+.\-]*)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+			scan:        `:\/\/[^:\"\/]+:[^@\"\/]+@`,
 			inputString: `http://user:password@host:8888;`,
 			wantString:  `http://***HIDDEN***:***HIDDEN***@host:8888;`, // No trailing newline in input, so none in output
 			wantRedactions: RedactionList{

@@ -1719,7 +1719,7 @@ func Test_Redactors(t *testing.T) {
 		}
 	  ]`
 
-	wantRedactionsLen := 43
+	wantRedactionsLen := 44
 	wantRedactionsCount := 25
 
 	t.Run("test default redactors", func(t *testing.T) {
@@ -1744,6 +1744,124 @@ func Test_Redactors(t *testing.T) {
 		req.Len(actualRedactions.ByRedactor, wantRedactionsCount)
 		ResetRedactionList()
 	})
+}
+
+// Connection strings are commonly written without a trailing database name, e.g.
+// "postgres://user:password@host:5432". The default redactors that mask the host and
+// database name only match when a database name is present, so credentials in these
+// URIs are masked by a separate redactor.
+func Test_DefaultRedactors_ConnectionStrings(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "postgres uri with database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432/pg_database",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***",
+		},
+		{
+			name:  "postgres uri without database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host:5432",
+		},
+		{
+			name:  "postgres uri without port or database name",
+			input: "postgres://pg_user:pg_password@pg_host",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host",
+		},
+		{
+			name:  "postgres uri with query parameters instead of a database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432?sslmode=require",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host:5432?sslmode=require",
+		},
+		{
+			name:  "mysql uri without database name",
+			input: "mysql://my_user:my_password@my_host:3306",
+			want:  "mysql://***HIDDEN***:***HIDDEN***@my_host:3306",
+		},
+		{
+			name:  "redis uri without database name",
+			input: "redis://redis_user:redis_password@redis_host:6379",
+			want:  "redis://***HIDDEN***:***HIDDEN***@redis_host:6379",
+		},
+		{
+			name:  "amqp uri with a trailing slash and no database name",
+			input: "amqp://rabbit_user:rabbit_password@rabbit_host:5672/",
+			want:  "amqp://***HIDDEN***:***HIDDEN***@rabbit_host:5672/",
+		},
+		{
+			name:  "uri without database name in json",
+			input: `{"name":"DB_URI","value":"mongodb://mongo_user:mongo_password@mongo_host:27017"}`,
+			want:  `{"name":"DB_URI","value":"mongodb://***HIDDEN***:***HIDDEN***@mongo_host:27017"}`,
+		},
+		{
+			name:  "http url with credentials",
+			input: "http://user:password@host:8888",
+			want:  "http://***HIDDEN***:***HIDDEN***@host:8888",
+		},
+		{
+			name:  "mysql dsn with database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(***HIDDEN***:3309)/***HIDDEN***",
+		},
+		{
+			name:  "mysql dsn without database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "mysql dsn with a trailing slash and no database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)/",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/",
+		},
+		{
+			name:  "mysql dsn in a log line",
+			input: "INFO connecting to dbuser:thisisasecret@tcp(dbserver.org:3309)",
+			want:  "INFO connecting to ***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "url without credentials is not redacted",
+			input: "http://awesome-api:8013/graphql",
+			want:  "http://awesome-api:8013/graphql",
+		},
+		{
+			name:  "url without credentials or path is not redacted",
+			input: "https://registry:10443",
+			want:  "https://registry:10443",
+		},
+		{
+			name:  "image reference is not redacted",
+			input: "image: localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925",
+			want:  "image: localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925",
+		},
+		{
+			name:  "ssh remote is not redacted",
+			input: "git@github.com:replicatedhq/troubleshoot.git",
+			want:  "git@github.com:replicatedhq/troubleshoot.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+			defer ResetRedactionList()
+
+			redactors, err := getRedactors("testpath")
+			req.NoError(err)
+
+			nextReader := io.Reader(strings.NewReader(tt.input))
+			for _, r := range redactors {
+				nextReader = r.Redact(nextReader, "testpath")
+			}
+
+			redacted, err := io.ReadAll(nextReader)
+			req.NoError(err)
+			req.Equal(tt.want, string(redacted))
+		})
+	}
 }
 
 func Test_redactMatchesPath(t *testing.T) {
