@@ -1944,9 +1944,16 @@ func Test_RedactCredentialEnvNames(t *testing.T) {
 		// credentials
 		{envName: "GOOGLE_APPLICATION_CREDENTIALS", redacted: true},
 		{envName: "DOCKER_CREDS", redacted: true},
+		// the patterns are case insensitive, and match anywhere in the name
+		{envName: "openai_api_key", redacted: true},
+		{envName: "Api_Key", redacted: true},
+		{envName: "X_API_KEY_HEADER", redacted: true},
 		// names that carry no credential, and must survive untouched
 		{envName: "LOG_LEVEL", redacted: false},
 		{envName: "NODE_ENV", redacted: false},
+		{envName: "MAX_LOGIN_ATTEMPTS", redacted: false},
+		// `creds` must not swallow unrelated words starting with "cred"
+		{envName: "CREDIT_LIMIT", redacted: false},
 	}
 
 	for _, tt := range tests {
@@ -2015,4 +2022,55 @@ func Test_RedactEscapedQuotesInValue(t *testing.T) {
 			ResetRedactionList()
 		})
 	}
+}
+
+// The `auth` and `secret` patterns are deliberately broad substrings, so they
+// also catch names that describe a credential rather than carry one. These
+// cases pin that behaviour: over-redaction is the accepted trade for not
+// leaking, and narrowing a pattern later should show up here as a deliberate
+// change rather than a silent one.
+func Test_RedactCredentialEnvNamesOverMatches(t *testing.T) {
+	overMatched := []string{
+		"AUTHORITY_URL",
+		"AUTHOR_EMAIL",
+		"OAUTH2_ISSUER",
+		"SECRET_NAME",
+		"GITHUB_PRIVATE_KEY_FILENAME",
+	}
+
+	for _, envName := range overMatched {
+		t.Run(envName, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+
+			input := fmt.Sprintf(`{\"name\":\"%s\",\"value\":\"not-a-secret\"}`, envName)
+			out, err := Redact(strings.NewReader(input), "testpath", nil)
+			req.NoError(err)
+
+			redacted, err := ioutil.ReadAll(out)
+			req.NoError(err)
+
+			req.Contains(string(redacted), MASK_TEXT)
+			ResetRedactionList()
+		})
+	}
+}
+
+// An env var explicitly set to the empty string is masked too, since the mask
+// group matches zero characters. That is pre-existing behaviour shared with the
+// built-in password and token redactors, and it costs a small diagnostic signal:
+// "set but empty" becomes indistinguishable from "set to a secret".
+func Test_RedactCredentialEnvNamesEmptyValue(t *testing.T) {
+	req := require.New(t)
+	ResetRedactionList()
+
+	input := `{\"name\":\"API_KEY\",\"value\":\"\"}`
+	out, err := Redact(strings.NewReader(input), "testpath", nil)
+	req.NoError(err)
+
+	redacted, err := ioutil.ReadAll(out)
+	req.NoError(err)
+
+	req.Contains(string(redacted), MASK_TEXT)
+	ResetRedactionList()
 }
