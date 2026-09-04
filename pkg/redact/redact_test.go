@@ -1817,6 +1817,26 @@ func Test_DefaultRedactors_ConnectionStrings(t *testing.T) {
 			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/",
 		},
 		{
+			name:  "mysql dsn over tcp6 with database name",
+			input: "dbuser:thisisasecret@tcp6(dbserver.org:3306)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp6(***HIDDEN***:3306)/***HIDDEN***",
+		},
+		{
+			name:  "mysql dsn over tcp6 with an ipv6 address and no database name",
+			input: "dbuser:thisisasecret@tcp6([::1]:3306)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp6([::1]:3306)",
+		},
+		{
+			name:  "mysql dsn over tcp4 without database name",
+			input: "dbuser:thisisasecret@tcp4(dbserver.org:3306)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp4(dbserver.org:3306)",
+		},
+		{
+			name:  "mysql dsn over a unix socket",
+			input: "dbuser:thisisasecret@unix(/var/run/mysqld/mysqld.sock)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@unix(/var/run/mysqld/mysqld.sock)/blog_production",
+		},
+		{
 			name:  "mysql dsn with a slash in the password",
 			input: "dbuser:this/is/a/secret@tcp(dbserver.org:3309)",
 			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
