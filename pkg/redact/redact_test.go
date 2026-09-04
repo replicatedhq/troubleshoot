@@ -1977,3 +1977,42 @@ func Test_RedactCredentialEnvNames(t *testing.T) {
 		})
 	}
 }
+
+// A credential value containing an escaped quote must be masked in full. The
+// mask group excludes bare quotes, so without an explicit alternative for the
+// `\\\"` sequence it stops at the first embedded quote and leaves the tail of
+// the secret in cleartext.
+func Test_RedactEscapedQuotesInValue(t *testing.T) {
+	envNames := []string{
+		// covered by the patterns added for credential env names
+		"OPENAI_API_KEY",
+		"GITHUB_CLIENT_SECRET",
+		"PRIVATE_KEY",
+		// covered by the pre-existing built-ins
+		"MYSQL_PASSWORD",
+		"AUDITOR_TOKEN",
+		"MYSQL_USER",
+		"MYSQL_DATABASE",
+		"AWS_SECRET_ACCESS_KEY",
+		"AWS_ACCESS_KEY_ID",
+		"AWS_OWNER_ACCOUNT",
+	}
+
+	for _, envName := range envNames {
+		t.Run(envName, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+
+			input := fmt.Sprintf(`{\"name\":\"%s\",\"value\":\"super\\\"sensitive\"}`, envName)
+			out, err := Redact(strings.NewReader(input), "testpath", nil)
+			req.NoError(err)
+
+			redacted, err := ioutil.ReadAll(out)
+			req.NoError(err)
+
+			req.NotContains(string(redacted), "sensitive")
+			req.Contains(string(redacted), MASK_TEXT)
+			ResetRedactionList()
+		})
+	}
+}
