@@ -231,6 +231,24 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	return false, nil
 }
 
+// credentialEnvNamePatterns are regex fragments matched case-insensitively
+// against environment variable names. Any env var whose name contains one of
+// these has its value redacted, so names like OPENAI_API_KEY, SMTP_PASSWORD or
+// GITHUB_CLIENT_SECRET never reach a support bundle in cleartext.
+var credentialEnvNamePatterns = []struct {
+	// pattern must be lowercase: it doubles as the `scan` prefilter, which is
+	// matched against a lowercased copy of the line.
+	pattern string
+	// desc completes the "...names that look like %s" redactor name
+	desc string
+}{
+	{pattern: `api[-_]?key`, desc: "API keys"},
+	{pattern: `secret`, desc: "secrets"},
+	{pattern: `auth`, desc: "authorization credentials"},
+	{pattern: `private[-_]?key`, desc: "private keys"},
+	{pattern: `(?:credential|creds)`, desc: "credentials"},
+}
+
 func getRedactors(path string) ([]Redactor, error) {
 	// TODO: Make this configurable
 
@@ -244,21 +262,21 @@ func getRedactors(path string) ([]Redactor, error) {
 		// aws secrets
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `secret_?access_?key`,
 			},
 			name: "Redact values for environment variables that look like AWS Secret Access Keys",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `access_?key_?id`,
 			},
 			name: "Redact values for environment variables that look like AWS Access Keys",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `owner_?account`,
 			},
 			name: "Redact values for environment variables that look like AWS Owner or Account numbers",
@@ -266,7 +284,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		// passwords in general
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `password`,
 			},
 			name: "Redact values for environment variables with names beginning with 'password'",
@@ -275,21 +293,21 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `token`,
 			},
 			name: "Redact values for environment variables with names beginning with 'token'",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `database`,
 			},
 			name: "Redact values for environment variables with names beginning with 'database'",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `user`,
 			},
 			name: "Redact values for environment variables with names beginning with 'user'",
@@ -477,6 +495,29 @@ func getRedactors(path string) ([]Redactor, error) {
 			return nil, err // maybe skip broken ones?
 		}
 		redactors = append(redactors, r)
+	}
+
+	// Each credential env-name pattern gets both a single-line redactor (escaped
+	// JSON, e.g. `\\"name\\":\\"FOO\\",\\"value\\":\\"bar\\"`) and a multi-line one
+	// (indented JSON, where "name" and "value" land on separate lines).
+	for _, p := range credentialEnvNamePatterns {
+		single, err := NewSingleLineRedactor(LineRedactor{
+			regex: fmt.Sprintf(`(?i)(\\\"name\\\":\\\"[^\"]*%s[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`, p.pattern),
+			scan:  p.pattern,
+		}, MASK_TEXT, path, fmt.Sprintf("Redact values for environment variables with names that look like %s", p.desc), true)
+		if err != nil {
+			return nil, err
+		}
+		redactors = append(redactors, single)
+
+		multi, err := NewMultiLineRedactor(LineRedactor{
+			regex: fmt.Sprintf(`(?i)"name": *"[^\"]*%s[^\"]*"`, p.pattern),
+			scan:  p.pattern,
+		}, `(?i)("value": *")(?P<mask>.*[^\"]*)(")`, MASK_TEXT, path, fmt.Sprintf("Redact environment variables that look like %s in multiline JSON", p.desc), true)
+		if err != nil {
+			return nil, err
+		}
+		redactors = append(redactors, multi)
 	}
 
 	// Add built-in redactors that are scoped to specific custom resource files.
