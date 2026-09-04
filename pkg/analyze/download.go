@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	getter "github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
@@ -175,15 +176,20 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 			return errors.Wrap(err, "failed to read header from tar")
 		}
 
+		// Guard against path traversal (zip-slip): make sure the resolved
+		// path stays within destDir before we create anything on disk.
+		cleanDest := filepath.Clean(destDir)
+		destFileName := filepath.Join(destDir, header.Name)
+		if destFileName != cleanDest && !strings.HasPrefix(destFileName, cleanDest+string(os.PathSeparator)) {
+			return errors.Errorf("tar entry %q resolves outside of destination directory", header.Name)
+		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
-			name := filepath.Join(destDir, header.Name)
-			if err := os.MkdirAll(name, os.FileMode(header.Mode)); err != nil {
+			if err := os.MkdirAll(destFileName, os.FileMode(header.Mode)); err != nil {
 				return errors.Wrap(err, "failed to mkdir")
 			}
 		case tar.TypeReg:
-			destFileName := filepath.Join(destDir, header.Name)
-
 			dirName := filepath.Dir(destFileName)
 			if err := os.MkdirAll(dirName, 0755); err != nil {
 				return errors.Wrapf(err, "failed to mkdir for file %s", header.Name)
@@ -199,8 +205,6 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 				return errors.Wrap(err, "failed to extract file")
 			}
 		case tar.TypeSymlink:
-			destFileName := filepath.Join(destDir, header.Name)
-
 			dirName := filepath.Dir(destFileName)
 			if err := os.MkdirAll(dirName, 0755); err != nil {
 				return errors.Wrapf(err, "failed to mkdir for symlink %s", header.Name)
@@ -209,6 +213,9 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 			// Symlink targets should be absolute paths after extraction
 			// for other parts of the code to work correctly e.g redaction, CollectorResult
 			targetPath := filepath.Join(filepath.Dir(destFileName), header.Linkname)
+			if targetPath != cleanDest && !strings.HasPrefix(targetPath, cleanDest+string(os.PathSeparator)) {
+				return errors.Errorf("symlink %q target resolves outside of destination directory", header.Name)
+			}
 			err = os.Symlink(targetPath, destFileName)
 			if err != nil {
 				return errors.Wrap(err, "failed to create symlink")
