@@ -65,3 +65,15 @@ not been tampered with. Install [Cosign v3](https://github.com/sigstore/cosign/r
 $ cosign verify-blob --key key.pub --bundle troubleshoot-sbom.tgz.bundle troubleshoot-sbom.tgz
 Verified OK
 ```
+
+# Build Provenance
+
+SLSA build provenance attestations are generated for the `preflight` and `support-bundle` archives in each release. After downloading an archive, use the [GitHub CLI](https://cli.github.com/) to verify that it was built by this repository's release workflow:
+
+```sh
+gh attestation verify preflight_linux_amd64.tar.gz \
+  --repo replicatedhq/troubleshoot \
+  --signer-workflow replicatedhq/troubleshoot/.github/workflows/release.yaml
+```
+
+Replace `preflight_linux_amd64.tar.gz` with the name of the downloaded release archive.

@@ -12,6 +12,10 @@ concurrency:
 jobs:
   goreleaser:
     runs-on: troubleshoot_release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -41,6 +45,15 @@ jobs:
           args: release --clean --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+
+      - name: Attest CLI release artifacts
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/preflight_*.tar.gz
+            dist/preflight_*.zip
+            dist/support-bundle_*.tar.gz
+            dist/support-bundle_*.zip
 
       - name: Update new preflight version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}
