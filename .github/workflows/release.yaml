@@ -19,17 +19,17 @@ jobs:
       artifact-metadata: write
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
           check-latest: true
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        uses: sigstore/cosign-installer@v4.1.2
         with:
           cosign-release: 'v3.1.3'
 
@@ -40,7 +40,7 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        uses: goreleaser/goreleaser-action@v7
         with:
           version: "v2.12.3"
           args: release --clean --config deploy/.goreleaser.yaml
@@ -49,7 +49,7 @@ jobs:
 
       - name: Attest CLI release artifacts
         id: attest_cli
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@v4
         with:
           subject-path: |
             dist/preflight_*.tar.gz
@@ -68,13 +68,13 @@ jobs:
 
       - name: Update new preflight version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}
-        uses: rajatjindal/krew-release-bot@c970b8a8f6dbc2f2285a26e3ae160903b87002c3 # v0.0.51
+        uses: rajatjindal/krew-release-bot@v0.0.51
         with:
           krew_template_file: deploy/krew/preflight.yaml
 
       - name: Update new support-bundle version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}
-        uses: rajatjindal/krew-release-bot@c970b8a8f6dbc2f2285a26e3ae160903b87002c3 # v0.0.51
+        uses: rajatjindal/krew-release-bot@v0.0.51
         with:
           krew_template_file: deploy/krew/support-bundle.yaml
 
