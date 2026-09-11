@@ -47,6 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
 
       - name: Attest CLI release artifacts
+        id: attest_cli
         uses: actions/attest@v4
         with:
           subject-path: |
@@ -54,6 +55,34 @@ jobs:
             dist/preflight_*.zip
             dist/support-bundle_*.tar.gz
             dist/support-bundle_*.zip
+
+      - name: Add provenance bundle to release
+        uses: actions/github-script@v9
+        env:
+          BUNDLE_PATH: ${{ steps.attest_cli.outputs.bundle-path }}
+        with:
+          script: |
+            const fs = require('fs');
+            const tag = process.env.GITHUB_REF_NAME;
+            const name = `troubleshoot_${tag}_provenance.sigstore.json`;
+            const bundle = await fs.promises.readFile(process.env.BUNDLE_PATH);
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag,
+            });
+
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name,
+              data: bundle,
+              headers: {
+                'content-type': 'application/json',
+                'content-length': bundle.length,
+              },
+            });
 
       - name: Update new preflight version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}
