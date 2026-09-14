@@ -12,6 +12,11 @@ concurrency:
 jobs:
   goreleaser:
     runs-on: troubleshoot_release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -41,6 +46,25 @@ jobs:
           args: release --clean --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+
+      - name: Attest CLI release artifacts
+        id: attest_cli
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/preflight_*.tar.gz
+            dist/preflight_*.zip
+            dist/support-bundle_*.tar.gz
+            dist/support-bundle_*.zip
+
+      - name: Add provenance bundle to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE_PATH: ${{ steps.attest_cli.outputs.bundle-path }}
+        run: |
+          bundle="dist/troubleshoot_${GITHUB_REF_NAME}_provenance.sigstore.json"
+          cp "${BUNDLE_PATH}" "${bundle}"
+          gh release upload "${GITHUB_REF_NAME}" "${bundle}" --clobber
 
       - name: Update new preflight version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}

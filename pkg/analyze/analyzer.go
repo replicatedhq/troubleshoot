@@ -85,16 +85,18 @@ func HostAnalyze(
 		return nil
 	}
 
+	strict := GetHostStrictFlag(hostAnalyzer)
+
 	result, err := analyzer.Analyze(getFile, findFiles)
 	if err != nil {
-		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze"))
+		return setStrictOnResults(NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze")), strict)
 	}
 
 	if len(result) == 0 {
 		klog.Errorf("no outcome matched for %q host analyzer", analyzer.Title())
 	}
 
-	return result
+	return setStrictOnResults(result, strict)
 }
 
 func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
@@ -157,26 +159,87 @@ func Analyze(
 		klog.Errorf("no outcome matched for %q analyzer", analyzerInst.Title())
 	}
 
-	return results, nil
+	return setStrictOnResults(results, GetStrictFlag(analyzer)), nil
+}
+
+// setStrictOnResults stamps the analyzer's strict flag onto every result so
+// strictness is preserved even for analyzers that do not copy it themselves.
+func setStrictOnResults(results []*AnalyzeResult, strict bool) []*AnalyzeResult {
+	for _, result := range results {
+		if result != nil {
+			result.Strict = strict
+		}
+	}
+	return results
 }
 
 func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrString {
 	if analyzer == nil {
 		return nil
 	}
+	return getAnalyzerFlag(reflect.ValueOf(analyzer).Elem(), "Exclude")
+}
 
-	reflected := reflect.ValueOf(analyzer).Elem()
+// GetStrictFlag reports whether any analyzer set on the v1beta2.Analyze union
+// is strict. Checking every set member (rather than the one the dispatcher
+// executes) matches how preflight.HasStrictAnalyzers classifies specs.
+func GetStrictFlag(analyzer *troubleshootv1beta2.Analyze) bool {
+	if analyzer == nil {
+		return false
+	}
+	return anyAnalyzerFlagTrue(reflect.ValueOf(analyzer).Elem(), "Strict")
+}
+
+// GetHostStrictFlag reports whether any host analyzer set on the
+// v1beta2.HostAnalyze union is strict.
+func GetHostStrictFlag(hostAnalyzer *troubleshootv1beta2.HostAnalyze) bool {
+	if hostAnalyzer == nil {
+		return false
+	}
+	return anyAnalyzerFlagTrue(reflect.ValueOf(hostAnalyzer).Elem(), "Strict")
+}
+
+// anyAnalyzerFlagTrue reports whether the named *multitype.BoolOrString field
+// is true on any non-nil member of an analyzer union struct.
+func anyAnalyzerFlagTrue(reflected reflect.Value, fieldName string) bool {
 	for i := 0; i < reflected.NumField(); i++ {
 		if reflected.Field(i).IsNil() {
 			continue
 		}
 
-		field := reflect.Indirect(reflected.Field(i)).FieldByName("Exclude")
-		exclude, ok := field.Interface().(*multitype.BoolOrString)
+		field := reflect.Indirect(reflected.Field(i)).FieldByName(fieldName)
+		if !field.IsValid() {
+			continue
+		}
+		flag, ok := field.Interface().(*multitype.BoolOrString)
 		if !ok {
 			continue
 		}
-		return exclude
+		if flag.BoolOrDefaultFalse() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// getAnalyzerFlag finds the first non-nil member of an analyzer union struct
+// and returns the named *multitype.BoolOrString field from its AnalyzeMeta.
+func getAnalyzerFlag(reflected reflect.Value, fieldName string) *multitype.BoolOrString {
+	for i := 0; i < reflected.NumField(); i++ {
+		if reflected.Field(i).IsNil() {
+			continue
+		}
+
+		field := reflect.Indirect(reflected.Field(i)).FieldByName(fieldName)
+		if !field.IsValid() {
+			continue
+		}
+		flag, ok := field.Interface().(*multitype.BoolOrString)
+		if !ok {
+			continue
+		}
+		return flag
 	}
 
 	return nil
