@@ -208,11 +208,23 @@ func Test_GetStrictFlag(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "multiple members set, only one strict",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{},
+				Mysql: &troubleshootv1beta2.DatabaseAnalyze{
+					AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+						Strict: multitype.FromBool(true),
+					},
+				},
+			},
+			want: true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetStrictFlag(test.analyzer).BoolOrDefaultFalse()
+			got := GetStrictFlag(test.analyzer)
 			assert.Equal(t, test.want, got)
 		})
 	}
@@ -251,7 +263,7 @@ func Test_GetHostStrictFlag(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetHostStrictFlag(test.analyzer).BoolOrDefaultFalse()
+			got := GetHostStrictFlag(test.analyzer)
 			assert.Equal(t, test.want, got)
 		})
 	}
