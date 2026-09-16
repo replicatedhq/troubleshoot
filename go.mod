@@ -18,7 +18,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/go-sql-driver/mysql v1.10.1
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/google/go-containerregistry v0.22.1
 	github.com/google/gofuzz v1.2.0
