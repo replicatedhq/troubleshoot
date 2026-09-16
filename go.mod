@@ -7,9 +7,9 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.1
-	github.com/aws/aws-sdk-go-v2 v1.46.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.3
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.112.0
+	github.com/aws/aws-sdk-go-v2 v1.47.0
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.113.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/govaluate v1.10.0
 	github.com/cilium/ebpf v0.22.0
@@ -60,7 +60,7 @@ require (
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/streaming v0.37.0
 	oras.land/oras-go/v2 v2.6.2
-	sigs.k8s.io/controller-runtime v0.25.0
+	sigs.k8s.io/controller-runtime v0.25.1
 	sigs.k8s.io/e2e-framework v0.7.0
 )
 
@@ -86,18 +86,18 @@ require (
 	github.com/avast/retry-go/v4 v4.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.33.3 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.19.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.37.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.42.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.49.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/chai2010/gettext-go v1.0.3 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
@@ -265,7 +265,7 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	helm.sh/helm/v3 v3.21.4
+	helm.sh/helm/v3 v3.22.0
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/kubelet v0.37.0
 	k8s.io/metrics v0.37.0
