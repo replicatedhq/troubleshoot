@@ -44,7 +44,7 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
-	github.com/vmware-tanzu/velero v1.18.2
+	github.com/vmware-tanzu/velero v1.18.3
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba
