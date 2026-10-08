@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -54,6 +55,9 @@ func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult,
 		output.SaveResult(c.BundlePath, getCopyErrosFileName(c.Collector), marshalErrors(podsErrors))
 	}
 
+	// Strip any trailing slash, otherwise the tar command below looks for e.g. /tmp/dir/dir
+	containerPath := filepath.Clean(c.Collector.ContainerPath)
+
 	if len(pods) > 0 {
 		for _, pod := range pods {
 
@@ -68,21 +72,21 @@ func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 			copyErrors := map[string]string{}
 
-			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(c.Collector.ContainerPath))
-			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, c.Collector.ContainerPath, c.Collector.ExtractArchive)
+			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(containerPath))
+			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, containerPath, c.Collector.ExtractArchive)
 			if err != nil {
-				copyErrors[filepath.Join(c.Collector.ContainerPath, "error")] = err.Error()
+				copyErrors[filepath.Join(containerPath, "error")] = err.Error()
 				if len(stderr) > 0 {
-					copyErrors[filepath.Join(c.Collector.ContainerPath, "stderr")] = string(stderr)
+					copyErrors[filepath.Join(containerPath, "stderr")] = string(stderr)
 				}
 
-				key := filepath.Join(subPath, c.Collector.ContainerPath+"-errors.json")
+				key := filepath.Join(subPath, containerPath+"-errors.json")
 				output.SaveResult(c.BundlePath, key, marshalErrors(copyErrors))
 				continue
 			}
 
 			for k, v := range files {
-				output[filepath.Join(subPath, filepath.Dir(c.Collector.ContainerPath), k)] = v
+				output[filepath.Join(subPath, filepath.Dir(containerPath), k)] = v
 			}
 		}
 	}
@@ -119,42 +123,9 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 	result := NewResult()
 
 	var stdoutWriter io.Writer
-	var copyError error
+	var waitForExtract func(streamErr error) error
 	if extract {
-		pipeReader, pipeWriter := io.Pipe()
-		tarReader := tar.NewReader(pipeReader)
-		stdoutWriter = pipeWriter
-
-		go func() {
-			// this can cause "read/write on closed pipe" error, but without this exec.Stream blocks
-			defer pipeWriter.Close()
-
-			for {
-				header, err := tarReader.Next()
-				if err == io.EOF {
-					return
-				}
-				if err != nil {
-					pipeWriter.CloseWithError(errors.Wrap(err, "failed to read header from tar"))
-					return
-				}
-
-				switch header.Typeflag {
-				case tar.TypeDir:
-					name := filepath.Join(dstPath, header.Name)
-					if err := os.MkdirAll(name, os.FileMode(header.Mode)); err != nil {
-						pipeWriter.CloseWithError(errors.Wrap(err, "failed to mkdir"))
-						return
-					}
-				case tar.TypeReg:
-					err := result.SaveResult(dstPath, header.Name, tarReader)
-					if err != nil {
-						pipeWriter.CloseWithError(errors.Wrapf(err, "failed to save result for file %s", header.Name))
-						return
-					}
-				}
-			}
-		}()
+		stdoutWriter, waitForExtract = newTarExtractor(dstPath, result)
 	} else {
 		w, err := result.GetWriter(dstPath, filepath.Base(containerPath)+".tar")
 		if err != nil {
@@ -166,17 +137,90 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 	}
 
 	var stderr bytes.Buffer
-	copyError = exec.Stream(remotecommand.StreamOptions{
+	copyError := exec.Stream(remotecommand.StreamOptions{
 		Stdin:  nil,
 		Stdout: stdoutWriter,
 		Stderr: &stderr,
 		Tty:    false,
 	})
+	if waitForExtract != nil {
+		if err := waitForExtract(copyError); err != nil && copyError == nil {
+			return result, stderr.Bytes(), errors.Wrap(err, "failed to extract files")
+		}
+	}
 	if copyError != nil {
 		return result, stderr.Bytes(), errors.Wrap(copyError, "failed to stream command output")
 	}
 
 	return result, stderr.Bytes(), nil
+}
+
+// newTarExtractor returns a writer that extracts the tar stream written to it into dstPath,
+// recording every extracted file in result. The returned wait function must be called once
+// the stream has ended, passing the stream's error (if any). It waits for extraction to
+// finish and returns the extraction error.
+//
+// Errors from the writer are not enough on their own: client-go only logs stdout write
+// errors and reports the exec as successful, so extraction failures would otherwise be lost.
+func newTarExtractor(dstPath string, result CollectorResult) (io.Writer, func(streamErr error) error) {
+	pipeReader, pipeWriter := io.Pipe()
+	done := make(chan error, 1)
+
+	go func() {
+		err := extractTar(pipeReader, dstPath, result)
+		if err == nil {
+			// Consume the end-of-archive padding so the writer doesn't fail on a closed pipe
+			_, err = io.Copy(io.Discard, pipeReader)
+		}
+		// Unblocks the writer if extraction stopped early
+		pipeReader.CloseWithError(err)
+		done <- err
+	}()
+
+	wait := func(streamErr error) error {
+		pipeWriter.CloseWithError(streamErr)
+		return <-done
+	}
+	return pipeWriter, wait
+}
+
+// extractTar extracts the regular files and directories in a tar stream into dstPath.
+// Directories are created writable regardless of their mode in the archive, so that
+// read-only directories in the container don't prevent their contents from being saved.
+// Symlinks are saved as "<name>.symlink" text files containing the link target.
+func extractTar(reader io.Reader, dstPath string, result CollectorResult) error {
+	tarReader := tar.NewReader(reader)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to read header from tar")
+		}
+
+		if !filepath.IsLocal(header.Name) {
+			return errors.Errorf("tar entry %q points outside the destination directory", header.Name)
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(filepath.Join(dstPath, header.Name), 0777); err != nil {
+				return errors.Wrapf(err, "failed to create directory %s", header.Name)
+			}
+		case tar.TypeReg:
+			if err := result.SaveResult(dstPath, header.Name, tarReader); err != nil {
+				return errors.Wrapf(err, "failed to save result for file %s", header.Name)
+			}
+		case tar.TypeSymlink:
+			// Symlinks are not recreated, since their target could point anywhere on the machine
+			// the bundle is collected or extracted on. Record where the link pointed instead.
+			name := filepath.Clean(header.Name) + ".symlink"
+			if err := result.SaveResult(dstPath, name, strings.NewReader(header.Linkname+"\n")); err != nil {
+				return errors.Wrapf(err, "failed to save result for symlink %s", header.Name)
+			}
+		}
+	}
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {

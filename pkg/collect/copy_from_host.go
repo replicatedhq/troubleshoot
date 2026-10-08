@@ -1,12 +1,10 @@
 package collect
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -320,42 +318,9 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 	result := NewResult()
 
 	var stdoutWriter io.Writer
-	var copyError error
+	var waitForExtract func(streamErr error) error
 	if extract {
-		pipeReader, pipeWriter := io.Pipe()
-		tarReader := tar.NewReader(pipeReader)
-		stdoutWriter = pipeWriter
-
-		go func() {
-			// this can cause "read/write on closed pipe" error, but without this exec.Stream blocks
-			defer pipeWriter.Close()
-
-			for {
-				header, err := tarReader.Next()
-				if err == io.EOF {
-					return
-				}
-				if err != nil {
-					pipeWriter.CloseWithError(errors.Wrap(err, "failed to read header from tar"))
-					return
-				}
-
-				switch header.Typeflag {
-				case tar.TypeDir:
-					name := filepath.Join(dstPath, header.Name)
-					if err := os.MkdirAll(name, os.FileMode(header.Mode)); err != nil {
-						pipeWriter.CloseWithError(errors.Wrap(err, "failed to mkdir"))
-						return
-					}
-				case tar.TypeReg:
-					err := result.SaveResult(dstPath, header.Name, tarReader)
-					if err != nil {
-						pipeWriter.CloseWithError(errors.Wrapf(err, "failed to save result for file %s", header.Name))
-						return
-					}
-				}
-			}
-		}()
+		stdoutWriter, waitForExtract = newTarExtractor(dstPath, result)
 	} else {
 		w, err := result.GetWriter(dstPath, "archive.tar")
 		if err != nil {
@@ -367,12 +332,17 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 	}
 
 	var stderr bytes.Buffer
-	copyError = exec.Stream(remotecommand.StreamOptions{
+	copyError := exec.Stream(remotecommand.StreamOptions{
 		Stdin:  nil,
 		Stdout: stdoutWriter,
 		Stderr: &stderr,
 		Tty:    false,
 	})
+	if waitForExtract != nil {
+		if err := waitForExtract(copyError); err != nil && copyError == nil {
+			return result, stderr.Bytes(), errors.Wrap(err, "failed to extract files")
+		}
+	}
 	if copyError != nil {
 		return result, stderr.Bytes(), errors.Wrap(copyError, "failed to stream command output")
 	}
