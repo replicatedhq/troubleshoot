@@ -108,9 +108,12 @@ func Test_extractTar(t *testing.T) {
 }
 
 func Test_extractTar_symlinkNameConflict(t *testing.T) {
+	// In every case the real file or directory is kept, and the symlink note is dropped
 	tests := []struct {
-		name    string
-		entries []tarEntry
+		name     string
+		entries  []tarEntry
+		want     CollectorResult
+		wantFile string
 	}{
 		{
 			name: "file before symlink",
@@ -119,6 +122,8 @@ func Test_extractTar_symlinkNameConflict(t *testing.T) {
 				{name: "test/foo.symlink", mode: 0644, content: "real"},
 				{name: "test/foo", mode: 0777, linkname: "a.txt"},
 			},
+			want:     CollectorResult{"test/foo.symlink": nil},
+			wantFile: "test/foo.symlink",
 		},
 		{
 			name: "symlink before file",
@@ -127,6 +132,30 @@ func Test_extractTar_symlinkNameConflict(t *testing.T) {
 				{name: "test/foo", mode: 0777, linkname: "a.txt"},
 				{name: "test/foo.symlink", mode: 0644, content: "real"},
 			},
+			want:     CollectorResult{"test/foo.symlink": nil},
+			wantFile: "test/foo.symlink",
+		},
+		{
+			name: "directory before symlink",
+			entries: []tarEntry{
+				{name: "test/", mode: 0755},
+				{name: "test/foo.symlink/", mode: 0755},
+				{name: "test/foo.symlink/x.txt", mode: 0644, content: "real"},
+				{name: "test/foo", mode: 0777, linkname: "a.txt"},
+			},
+			want:     CollectorResult{"test/foo.symlink/x.txt": nil},
+			wantFile: "test/foo.symlink/x.txt",
+		},
+		{
+			name: "symlink before directory",
+			entries: []tarEntry{
+				{name: "test/", mode: 0755},
+				{name: "test/foo", mode: 0777, linkname: "a.txt"},
+				{name: "test/foo.symlink/", mode: 0755},
+				{name: "test/foo.symlink/x.txt", mode: 0644, content: "real"},
+			},
+			want:     CollectorResult{"test/foo.symlink/x.txt": nil},
+			wantFile: "test/foo.symlink/x.txt",
 		},
 	}
 
@@ -138,13 +167,30 @@ func Test_extractTar_symlinkNameConflict(t *testing.T) {
 			err := extractTar(bytes.NewReader(buildTar(t, tt.entries)), dstPath, result)
 			require.NoError(t, err)
 
-			// The real file is kept in both cases
-			assert.Equal(t, CollectorResult{"test/foo.symlink": nil}, result)
-			data, err := os.ReadFile(filepath.Join(dstPath, "test/foo.symlink"))
+			assert.Equal(t, tt.want, result)
+			data, err := os.ReadFile(filepath.Join(dstPath, tt.wantFile))
 			require.NoError(t, err)
 			assert.Equal(t, "real", string(data))
 		})
 	}
+}
+
+func Test_extractTar_failedFileNotInResult(t *testing.T) {
+	dstPath := t.TempDir()
+	result := NewResult()
+
+	// A file where the "test" directory should go makes saving test/a.txt fail
+	require.NoError(t, os.WriteFile(filepath.Join(dstPath, "test"), []byte("in the way"), 0644))
+
+	data := buildTar(t, []tarEntry{
+		{name: "ok.txt", mode: 0644, content: "ok"},
+		{name: "test/a.txt", mode: 0644, content: "a"},
+	})
+	err := extractTar(bytes.NewReader(data), dstPath, result)
+	require.Error(t, err)
+
+	// Only the file that was saved before the error is listed
+	assert.Equal(t, CollectorResult{"ok.txt": nil}, result)
 }
 
 func Test_extractTar_rejectsPathsOutsideDestination(t *testing.T) {

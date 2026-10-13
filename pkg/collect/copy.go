@@ -75,6 +75,12 @@ func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(containerPath))
 			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, containerPath, c.Collector.ExtractArchive)
+
+			// Keep the files copied before any error, the same as copyFromHost
+			for k, v := range files {
+				output[filepath.Join(subPath, filepath.Dir(containerPath), k)] = v
+			}
+
 			if err != nil {
 				copyErrors[filepath.Join(containerPath, "error")] = err.Error()
 				if len(stderr) > 0 {
@@ -83,11 +89,6 @@ func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 				key := filepath.Join(subPath, containerPath+"-errors.json")
 				output.SaveResult(c.BundlePath, key, marshalErrors(copyErrors))
-				continue
-			}
-
-			for k, v := range files {
-				output[filepath.Join(subPath, filepath.Dir(containerPath), k)] = v
 			}
 		}
 	}
@@ -188,10 +189,15 @@ func newTarExtractor(dstPath string, result CollectorResult) (io.Writer, func(st
 // extractTar extracts the regular files and directories in a tar stream into dstPath.
 // Directories are created owner-writable regardless of their mode in the archive, so that
 // read-only directories in the container don't prevent their contents from being saved.
-// Symlinks are saved as "<name>.symlink" text files containing the link target, unless
-// a file with that name was already extracted.
+// Symlinks are saved as "<name>.symlink" text files containing the link target. These notes
+// are best effort: they never replace a real file or directory, and failing to save one
+// doesn't stop the extraction.
+//
+// On error, result only lists the files that were fully extracted before the error.
 func extractTar(reader io.Reader, dstPath string, result CollectorResult) error {
 	tarReader := tar.NewReader(reader)
+	// Symlink notes saved so far, so a real directory with the same name can replace them
+	symlinkNotes := map[string]bool{}
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -207,25 +213,43 @@ func extractTar(reader io.Reader, dstPath string, result CollectorResult) error 
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(filepath.Join(dstPath, header.Name), 0755); err != nil {
+			name := filepath.Clean(header.Name)
+			if symlinkNotes[name] {
+				klog.Warningf("Replacing symlink note %s with a directory of the same name", name)
+				if err := os.Remove(filepath.Join(dstPath, name)); err != nil {
+					return errors.Wrapf(err, "failed to remove symlink note %s", name)
+				}
+				delete(result, name)
+				delete(symlinkNotes, name)
+			}
+			if err := os.MkdirAll(filepath.Join(dstPath, name), 0755); err != nil {
 				return errors.Wrapf(err, "failed to create directory %s", header.Name)
 			}
 		case tar.TypeReg:
 			if err := result.SaveResult(dstPath, header.Name, tarReader); err != nil {
+				// SaveResult records the file before writing it, so remove it again
+				delete(result, header.Name)
 				return errors.Wrapf(err, "failed to save result for file %s", header.Name)
 			}
+			// A real file with the same name as a symlink note has replaced it
+			delete(symlinkNotes, filepath.Clean(header.Name))
 		case tar.TypeSymlink:
 			// Symlinks are not recreated, since their target could point anywhere on the machine
 			// the bundle is collected or extracted on. Record where the link pointed instead.
 			name := filepath.Clean(header.Name) + ".symlink"
-			if _, exists := result[name]; exists {
-				// Don't overwrite a real file that happens to have the same name
+			_, saved := result[name]
+			_, statErr := os.Lstat(filepath.Join(dstPath, name))
+			if saved || statErr == nil {
 				klog.Warningf("Not saving symlink target of %s, %s already exists", header.Name, name)
 				continue
 			}
 			if err := result.SaveResult(dstPath, name, strings.NewReader(header.Linkname+"\n")); err != nil {
-				return errors.Wrapf(err, "failed to save result for symlink %s", header.Name)
+				// The note is extra information, so don't fail the whole copy because of it
+				delete(result, name)
+				klog.Warningf("Failed to save symlink target of %s: %v", header.Name, err)
+				continue
 			}
+			symlinkNotes[name] = true
 		}
 	}
 }
