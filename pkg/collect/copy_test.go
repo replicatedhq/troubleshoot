@@ -99,6 +99,52 @@ func Test_extractTar(t *testing.T) {
 	// Symlinks themselves are never created
 	assert.NoFileExists(t, filepath.Join(dstPath, "test/link"))
 	assert.NoFileExists(t, filepath.Join(dstPath, "test/passwd"))
+
+	// The read-only directory is created writable by its owner only
+	info, err := os.Stat(filepath.Join(dstPath, "test/ro"))
+	require.NoError(t, err)
+	assert.NotZero(t, info.Mode().Perm()&0200, "directory should be writable by its owner")
+	assert.Zero(t, info.Mode().Perm()&0022, "directory should not be writable by group or others")
+}
+
+func Test_extractTar_symlinkNameConflict(t *testing.T) {
+	tests := []struct {
+		name    string
+		entries []tarEntry
+	}{
+		{
+			name: "file before symlink",
+			entries: []tarEntry{
+				{name: "test/", mode: 0755},
+				{name: "test/foo.symlink", mode: 0644, content: "real"},
+				{name: "test/foo", mode: 0777, linkname: "a.txt"},
+			},
+		},
+		{
+			name: "symlink before file",
+			entries: []tarEntry{
+				{name: "test/", mode: 0755},
+				{name: "test/foo", mode: 0777, linkname: "a.txt"},
+				{name: "test/foo.symlink", mode: 0644, content: "real"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dstPath := t.TempDir()
+			result := NewResult()
+
+			err := extractTar(bytes.NewReader(buildTar(t, tt.entries)), dstPath, result)
+			require.NoError(t, err)
+
+			// The real file is kept in both cases
+			assert.Equal(t, CollectorResult{"test/foo.symlink": nil}, result)
+			data, err := os.ReadFile(filepath.Join(dstPath, "test/foo.symlink"))
+			require.NoError(t, err)
+			assert.Equal(t, "real", string(data))
+		})
+	}
 }
 
 func Test_extractTar_rejectsPathsOutsideDestination(t *testing.T) {

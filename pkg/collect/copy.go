@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
 )
 
 type CollectCopy struct {
@@ -185,9 +186,10 @@ func newTarExtractor(dstPath string, result CollectorResult) (io.Writer, func(st
 }
 
 // extractTar extracts the regular files and directories in a tar stream into dstPath.
-// Directories are created writable regardless of their mode in the archive, so that
+// Directories are created owner-writable regardless of their mode in the archive, so that
 // read-only directories in the container don't prevent their contents from being saved.
-// Symlinks are saved as "<name>.symlink" text files containing the link target.
+// Symlinks are saved as "<name>.symlink" text files containing the link target, unless
+// a file with that name was already extracted.
 func extractTar(reader io.Reader, dstPath string, result CollectorResult) error {
 	tarReader := tar.NewReader(reader)
 	for {
@@ -205,7 +207,7 @@ func extractTar(reader io.Reader, dstPath string, result CollectorResult) error 
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(filepath.Join(dstPath, header.Name), 0777); err != nil {
+			if err := os.MkdirAll(filepath.Join(dstPath, header.Name), 0755); err != nil {
 				return errors.Wrapf(err, "failed to create directory %s", header.Name)
 			}
 		case tar.TypeReg:
@@ -216,6 +218,11 @@ func extractTar(reader io.Reader, dstPath string, result CollectorResult) error 
 			// Symlinks are not recreated, since their target could point anywhere on the machine
 			// the bundle is collected or extracted on. Record where the link pointed instead.
 			name := filepath.Clean(header.Name) + ".symlink"
+			if _, exists := result[name]; exists {
+				// Don't overwrite a real file that happens to have the same name
+				klog.Warningf("Not saving symlink target of %s, %s already exists", header.Name, name)
+				continue
+			}
 			if err := result.SaveResult(dstPath, name, strings.NewReader(header.Linkname+"\n")); err != nil {
 				return errors.Wrapf(err, "failed to save result for symlink %s", header.Name)
 			}
