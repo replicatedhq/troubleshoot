@@ -1666,6 +1666,116 @@ func Test_analyzeNodeResources(t *testing.T) {
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 			},
 		},
+		{
+			name: "countDistinct spans at least 3 instance types", // countDistinct pass path across all nodes
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "instance-type spread",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "countDistinct(node.kubernetes.io/instance-type) < 3",
+							Message: "Fewer than 3 distinct instance types.",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "At least 3 distinct instance types.",
+							URI:     "",
+						},
+					},
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "instance-type spread",
+				Message: "At least 3 distinct instance types.",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "countDistinct only counts filtered nodes", // filtering to one pool leaves a single distinct value
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "filtered instance-type spread",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "countDistinct(node.kubernetes.io/instance-type) < 3",
+							Message: "Fewer than 3 distinct instance types.",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "At least 3 distinct instance types.",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					Selector: &troubleshootv1beta2.NodeResourceSelectors{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							{
+								Key:      "node.kubernetes.io/instance-type",
+								Operator: metav1.LabelSelectorOpIn,
+								Values:   []string{"s-2vcpu-4gb"},
+							},
+						},
+					},
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  false,
+				IsFail:  false,
+				IsWarn:  true,
+				Title:   "filtered instance-type spread",
+				Message: "Fewer than 3 distinct instance types.",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "countDistinct is 0 when the label is absent", // AIR-238 zone syntax; fixture nodes carry no zone label
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "zone spread",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "countDistinct(topology.kubernetes.io/zone) < 3",
+							Message: "Nodes span fewer than 3 availability zones.",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Nodes span at least 3 availability zones.",
+							URI:     "",
+						},
+					},
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  false,
+				IsFail:  false,
+				IsWarn:  true,
+				Title:   "zone spread",
+				Message: "Nodes span fewer than 3 availability zones.",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
 	}
 
 	getExampleNodeContents := func(nodeName string) ([]byte, error) {

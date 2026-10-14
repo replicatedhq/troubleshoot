@@ -197,20 +197,6 @@ release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})
 release:
 	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
 
-.PHONY: snapshot-release
-snapshot-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
-	docker push replicated/troubleshoot:alpha
-	docker push replicated/preflight:alpha
-
-.PHONY: local-release
-local-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.yaml
-	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
-	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
-	docker push localhost:32000/troubleshoot:alpha
-	docker push localhost:32000/preflight:alpha
-
 .PHONY: run-preflight
 run-preflight: bin/preflight
 	./bin/preflight ./examples/preflight/sample-preflight.yaml
@@ -246,7 +232,8 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 		--tlog-upload \
 		--yes \
 		--rekor-url=https://rekor.sigstore.dev \
-		sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
+		--bundle sbom/assets/troubleshoot-sbom.tgz.bundle \
+		sbom/assets/troubleshoot-sbom.tgz
 	cosign public-key --key cosign.key --outfile sbom/assets/key.pub
 
 .PHONY: get-govulncheck

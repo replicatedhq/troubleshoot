@@ -1,7 +1,9 @@
 package supportbundle
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -88,6 +90,64 @@ spec:
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseSupportBundle() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadRedactorSpec(t *testing.T) {
+	origLoadFromSecret := loadFromSecret
+	defer func() { loadFromSecret = origLoadFromSecret }()
+
+	loadFromSecret = func(namespace, secretName, key string) ([]byte, error) {
+		return []byte(fmt.Sprintf("namespace=%s,secret=%s,key=%s", namespace, secretName, key)), nil
+	}
+
+	tests := []struct {
+		name        string
+		uri         string
+		wantContent string
+		wantErr     string
+	}{
+		{
+			name:        "secret URI with default key",
+			uri:         "secret/default/my-redactor",
+			wantContent: "namespace=default,secret=my-redactor,key=redactor-spec",
+		},
+		{
+			name:        "secret URI with custom key",
+			uri:         "secret/default/my-redactor/custom-key",
+			wantContent: "namespace=default,secret=my-redactor,key=custom-key",
+		},
+		{
+			name:    "secret URI with too few components",
+			uri:     "secret/default",
+			wantErr: "must have at least 3 components",
+		},
+		{
+			name:    "secret URI with too many components",
+			uri:     "secret/default/my-redactor/custom-key/extra",
+			wantErr: "must have at most 4 components",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := LoadRedactorSpec(tt.uri)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("LoadRedactorSpec() expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("LoadRedactorSpec() error = %q, want containing %q", err.Error(), tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("LoadRedactorSpec() unexpected error = %v", err)
+			}
+			if string(got) != tt.wantContent {
+				t.Errorf("LoadRedactorSpec() = %q, want %q", string(got), tt.wantContent)
 			}
 		})
 	}

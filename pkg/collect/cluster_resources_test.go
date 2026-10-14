@@ -28,7 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"sigs.k8s.io/yaml"
 )
 
 func init() {
@@ -512,17 +511,8 @@ func TestCollectClusterResources_CustomResource(t *testing.T) {
 	// Fetch the CR from cluster
 	res, errs := crsV1(ctx, dynamicClient, apixClient.ApiextensionsV1(), []string{"default"})
 	assert.Empty(t, errs)
-	require.Equal(t, 2, len(res))
+	require.Equal(t, 1, len(res))
 	assert.Equal(t, fromJSON(t, res["supportbundles.troubleshoot.sh/default.json"]), sbObject)
-	assert.Equal(t, fromYAML(t, res["supportbundles.troubleshoot.sh/default.yaml"]), sbObject)
-}
-
-func fromYAML(t *testing.T, dat []byte) troubleshootv1beta2.SupportBundle {
-	sb := []troubleshootv1beta2.SupportBundle{}
-	err := yaml.Unmarshal(dat, &sb)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(sb))
-	return sb[0]
 }
 
 func fromJSON(t *testing.T, dat []byte) troubleshootv1beta2.SupportBundle {

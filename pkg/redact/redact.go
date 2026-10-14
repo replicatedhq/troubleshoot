@@ -35,6 +35,32 @@ func init() {
 	}
 }
 
+// kurlInstallerRedactors are built-in redactors scoped to the kurl installer
+// custom resource. They previously applied only to the YAML copy of custom
+// resources; now they target the JSON file (and the YAML symlink that points to it).
+// The installer CRD can be either cluster-scoped (installers.cluster.kurl.sh.json)
+// or namespaced (installers.cluster.kurl.sh/<namespace>.json), so both patterns are
+// included.
+var kurlInstallerRedactors = []*troubleshootv1beta2.Redact{
+	{
+		Name: "Redact kurl installer fields",
+		FileSelector: troubleshootv1beta2.FileSelector{
+			Files: []string{
+				fmt.Sprintf("%s/%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+				fmt.Sprintf("%s/%s/%s/*.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, "installers.cluster.kurl.sh"),
+			},
+		},
+		Removals: troubleshootv1beta2.Removals{
+			Regex: []troubleshootv1beta2.Regex{
+				{Redactor: `(?i)("bootstrapToken"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("certKey"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("kubeadmToken"\s*:\s*")(?P<mask>[^"]*)(")`},
+				{Redactor: `(?i)("kubectl\.kubernetes\.io/last-applied-configuration"\s*:\s*")(?P<mask>(?:\\.|[^"\\])*)(")`},
+			},
+		},
+	},
+}
+
 // A regex cache to avoid recompiling the same regexes over and over
 func compileRegex(pattern string) (*regexp.Regexp, error) {
 	regexCacheLock.Lock()
@@ -205,6 +231,24 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	return false, nil
 }
 
+// credentialEnvNamePatterns are regex fragments matched case-insensitively
+// against environment variable names. Any env var whose name contains one of
+// these has its value redacted, so names like OPENAI_API_KEY, SMTP_PASSWORD or
+// GITHUB_CLIENT_SECRET never reach a support bundle in cleartext.
+var credentialEnvNamePatterns = []struct {
+	// pattern must be lowercase: it doubles as the `scan` prefilter, which is
+	// matched against a lowercased copy of the line.
+	pattern string
+	// desc completes the "...names that look like %s" redactor name
+	desc string
+}{
+	{pattern: `api[-_]?key`, desc: "API keys"},
+	{pattern: `secret`, desc: "secrets"},
+	{pattern: `auth`, desc: "authorization credentials"},
+	{pattern: `private[-_]?key`, desc: "private keys"},
+	{pattern: `(?:credential|creds)`, desc: "credentials"},
+}
+
 func getRedactors(path string) ([]Redactor, error) {
 	// TODO: Make this configurable
 
@@ -218,21 +262,21 @@ func getRedactors(path string) ([]Redactor, error) {
 		// aws secrets
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `secret_?access_?key`,
 			},
 			name: "Redact values for environment variables that look like AWS Secret Access Keys",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `access_?key_?id`,
 			},
 			name: "Redact values for environment variables that look like AWS Access Keys",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `owner_?account`,
 			},
 			name: "Redact values for environment variables that look like AWS Owner or Account numbers",
@@ -240,7 +284,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		// passwords in general
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `password`,
 			},
 			name: "Redact values for environment variables with names beginning with 'password'",
@@ -249,39 +293,52 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `token`,
 			},
 			name: "Redact values for environment variables with names beginning with 'token'",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `database`,
 			},
 			name: "Redact values for environment variables with names beginning with 'database'",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+				regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`,
 				scan:  `user`,
 			},
 			name: "Redact values for environment variables with names beginning with 'user'",
 		},
-		// connection strings with username and password
+		// credentials in a URI of any scheme, with or without a trailing path.
+		// the fuller redactors below mask the host and database name as well,
+		// but only match when a database name is present.
 		// http://user:password@host:8888
+		// postgres://user:password@host:5432
 		{
 			regex: LineRedactor{
-				regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
-				scan:  `https?|ftp`,
+				regex: `(?i)([a-z][a-z\d+.\-]*)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+				scan:  `:\/\/[^:\"\/]+:[^@\"\/]+@`,
 			},
 			name: "Redact connection strings with username and password",
 		},
 		// user:password@tcp(host:3309)/db-name
 		{
 			regex: LineRedactor{
-				regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-				scan:  `@tcp`,
+				regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@(?:tcp[46]?|unix)\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
+				scan:  `@(?:tcp|unix)`,
+			},
+			name: "Redact database connection strings that contain username and password",
+		},
+		// user:password@tcp(host:3309), with no trailing /db-name. tcp4, tcp6 and
+		// unix sockets are the other network types the mysql driver accepts.
+		// the password runs to the @, so that slashes and colons in it are masked too.
+		{
+			regex: LineRedactor{
+				regex: `(?P<mask>[^:\"\/\s]*){1}(:)(?P<mask>[^@\"\s]*){1}(@(?:tcp[46]?|unix)\()`,
+				scan:  `@(?:tcp|unix)`,
 			},
 			name: "Redact database connection strings that contain username and password",
 		},
@@ -440,39 +497,35 @@ func getRedactors(path string) ([]Redactor, error) {
 		redactors = append(redactors, r)
 	}
 
-	customResources := []struct {
-		resource string
-		yamlPath string
-	}{
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.bootstrapToken",
-		},
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.certKey",
-		},
-		{
-			resource: "installers.cluster.kurl.sh",
-			yamlPath: "*.spec.kubernetes.kubeadmToken",
-		},
-	}
-
-	uniqueCRs := map[string]bool{}
-	for _, cr := range customResources {
-		fileglob := fmt.Sprintf("%s/%s/%s/*.yaml", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, cr.resource)
-		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
-
-		// redact kubectl last applied annotation once for each resource since it contains copies of
-		// redacted fields
-		if !uniqueCRs[cr.resource] {
-			uniqueCRs[cr.resource] = true
-			redactors = append(redactors, &YamlRedactor{
-				filePath: fileglob,
-				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
-			})
+	// Each credential env-name pattern gets both a single-line redactor (escaped
+	// JSON, e.g. `\\"name\\":\\"FOO\\",\\"value\\":\\"bar\\"`) and a multi-line one
+	// (indented JSON, where "name" and "value" land on separate lines).
+	for _, p := range credentialEnvNamePatterns {
+		single, err := NewSingleLineRedactor(LineRedactor{
+			regex: fmt.Sprintf(`(?i)(\\\"name\\\":\\\"[^\"]*%s[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>(?:\\\\\\"|[^\"])*)(\\\")`, p.pattern),
+			scan:  p.pattern,
+		}, MASK_TEXT, path, fmt.Sprintf("Redact values for environment variables with names that look like %s", p.desc), true)
+		if err != nil {
+			return nil, err
 		}
+		redactors = append(redactors, single)
+
+		multi, err := NewMultiLineRedactor(LineRedactor{
+			regex: fmt.Sprintf(`(?i)"name": *"[^\"]*%s[^\"]*"`, p.pattern),
+			scan:  p.pattern,
+		}, `(?i)("value": *")(?P<mask>.*[^\"]*)(")`, MASK_TEXT, path, fmt.Sprintf("Redact environment variables that look like %s in multiline JSON", p.desc), true)
+		if err != nil {
+			return nil, err
+		}
+		redactors = append(redactors, multi)
 	}
+
+	// Add built-in redactors that are scoped to specific custom resource files.
+	scopedRedactors, err := buildAdditionalRedactors(path, kurlInstallerRedactors)
+	if err != nil {
+		return nil, err
+	}
+	redactors = append(redactors, scopedRedactors...)
 
 	return redactors, nil
 }

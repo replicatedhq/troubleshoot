@@ -30,6 +30,9 @@ func (a *AnalyzeSecret) Analyze(getFile getCollectedFileContents, findFiles getC
 	if err != nil {
 		return nil, err
 	}
+	if result == nil {
+		return nil, nil
+	}
 	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 	return []*AnalyzeResult{result}, nil
 }
@@ -54,42 +57,68 @@ func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecre
 		return nil, err
 	}
 
+	// The secret analyzer only supports fail (not found) and pass (found) outcomes
+	// per https://troubleshoot.sh/docs/analyze/secrets. If the spec contains
+	// neither, return an explicit error: returning (nil, nil) is swallowed by the
+	// Analyze wrapper into an empty result slice, so the misconfiguration would
+	// surface as neither a result nor an error.
+	// Capture fail and pass independently: a single outcome object may set both,
+	// so an else-if here would silently drop the second one.
+	var failOutcome, passOutcome *troubleshootv1beta2.SingleOutcome
+	for _, outcome := range analyzer.Outcomes {
+		if outcome.Fail != nil {
+			failOutcome = outcome.Fail
+		}
+		if outcome.Pass != nil {
+			passOutcome = outcome.Pass
+		}
+	}
+	if failOutcome == nil && passOutcome == nil {
+		return nil, fmt.Errorf("secret analyzer %s/%s must define at least one pass or fail outcome", analyzer.Namespace, analyzer.SecretName)
+	}
+
 	result := AnalyzeResult{
 		Title:   a.Title(),
 		IconKey: "kubernetes_analyze_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
-	var failOutcome *troubleshootv1beta2.Outcome
-	for _, outcome := range analyzer.Outcomes {
-		if outcome.Fail != nil {
-			failOutcome = outcome
-		}
+	secretFound := foundSecret.SecretExists
+	if secretFound && analyzer.Key != "" {
+		secretFound = foundSecret.Key == analyzer.Key && foundSecret.KeyExists
 	}
-
-	if !foundSecret.SecretExists {
+	// Use the matched branch's configured outcome verbatim, tracking whether one
+	// was actually present. A configured outcome with an intentionally empty
+	// message (e.g. a URI-only outcome) is preserved as-is. But when the matched
+	// branch has NO configured outcome at all — e.g. a pass-only spec that took
+	// the fail path, or a fail-only spec that passed — the empty message is not
+	// an intentional choice, so fall back to a default diagnostic. An absent
+	// outcome is not the same as an intentionally empty one.
+	outcomeConfigured := false
+	if secretFound {
+		result.IsPass = true
+		if passOutcome != nil {
+			result.Message = passOutcome.Message
+			result.URI = passOutcome.URI
+			outcomeConfigured = true
+		}
+	} else {
 		result.IsFail = true
-		result.Message = failOutcome.Fail.Message
-		result.URI = failOutcome.Fail.URI
-
-		return &result, nil
-	}
-
-	if analyzer.Key != "" {
-		if foundSecret.Key != analyzer.Key || !foundSecret.KeyExists {
-			result.IsFail = true
-			result.Message = failOutcome.Fail.Message
-			result.URI = failOutcome.Fail.URI
-
-			return &result, nil
+		if failOutcome != nil {
+			result.Message = failOutcome.Message
+			result.URI = failOutcome.URI
+			outcomeConfigured = true
 		}
 	}
 
-	result.IsPass = true
-	for _, outcome := range analyzer.Outcomes {
-		if outcome.Pass != nil {
-			result.Message = outcome.Pass.Message
-			result.URI = outcome.Pass.URI
+	if !outcomeConfigured {
+		switch {
+		case result.IsPass:
+			result.Message = fmt.Sprintf("Secret %s was found in namespace %s", analyzer.SecretName, analyzer.Namespace)
+		case analyzer.Key != "" && foundSecret.SecretExists:
+			result.Message = fmt.Sprintf("Key %s was not found in secret %s/%s", analyzer.Key, analyzer.Namespace, analyzer.SecretName)
+		default:
+			result.Message = fmt.Sprintf("Secret %s was not found in namespace %s", analyzer.SecretName, analyzer.Namespace)
 		}
 	}
 

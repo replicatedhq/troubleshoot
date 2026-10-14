@@ -56,19 +56,27 @@ For questions about using Troubleshoot, how to contribute and engaging with the 
 # Software Bill of Materials
 A signed SBOM  that includes Troubleshoot dependencies is included in each release.
 - **troubleshoot-sbom.tgz** contains a software bill of materials for Troubleshoot.
-- **troubleshoot-sbom.tgz.sig** is the digital signature for troubleshoot-sbom.tgz
+- **troubleshoot-sbom.tgz.bundle** contains the signature and transparency log material used by Cosign.
 - **key.pub** is the public key from the key pair used to sign troubleshoot-sbom.tgz
 
 The following example illustrates using [cosign](https://github.com/sigstore/cosign) to verify that **troubleshoot-sbom.tgz** has
-not been tampered with.
+not been tampered with. Install [Cosign v3](https://github.com/sigstore/cosign/releases).
 ```sh
-$ cosign verify-blob --key key.pub --signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
+$ cosign verify-blob --key key.pub --bundle troubleshoot-sbom.tgz.bundle troubleshoot-sbom.tgz
 Verified OK
 ```
 
-If you were to get an error similar to the one below, it means you are verifying an SBOM signed using cosign `v1` using a newer `v2` of the binary. This version introduced [breaking changes](https://github.com/sigstore/cosign/blob/main/CHANGELOG.md#breaking-changes) which require an additional flag `--insecure-ignore-tlog=true` to successfully verify SBOMs like so.
+# Build Provenance
+
+SLSA build provenance attestations are generated for the `preflight` and `support-bundle` archives in each release. Download the archive and the corresponding `troubleshoot_<version>_provenance.sigstore.json` bundle, then use [Cosign v3.1.3 or later](https://github.com/sigstore/cosign/releases) to verify that it was built by this repository's release workflow:
+
 ```sh
-$ cosign verify-blob --key key.pub --signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz --insecure-ignore-tlog=true
-WARNING: Skipping tlog verification is an insecure practice that lacks of transparency and auditability verification for the blob.
-Verified OK
+cosign verify-blob-attestation \
+  --bundle troubleshoot_v0.135.0_provenance.sigstore.json \
+  --type https://slsa.dev/provenance/v1 \
+  --certificate-identity "https://github.com/replicatedhq/troubleshoot/.github/workflows/release.yaml@refs/tags/v0.135.0" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  preflight_linux_amd64.tar.gz
 ```
+
+Replace `v0.135.0` and `preflight_linux_amd64.tar.gz` with the release tag and downloaded archive being verified. The same provenance bundle verifies both `preflight` and `support-bundle` archives from that release.

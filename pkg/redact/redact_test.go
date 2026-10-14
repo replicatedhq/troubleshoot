@@ -1,6 +1,7 @@
 package redact
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -878,7 +879,7 @@ func Test_Redactors(t *testing.T) {
 			},
 			"annotations": {
 			  "deployment.kubernetes.io/revision": "1",
-			  "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"extensions/v1beta1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"},\"name\":\"awesome-api\",\"namespace\":\"default\"},\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"app\":\"awesome-api\",\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"JWT_SIGNING_KEY\",\"value\":\"jwt-signing-key\"},{\"name\":\"TSED_SUPPRESS_ACCESSLOG\",\"value\":\"1\"},{\"name\":\"PINO_LOG_PRETTY\",\"value\":\"1\"},{\"name\":\"PINO_LOG_LEVEL\",\"value\":\"debug\"},{\"name\":\"NODE_ENV\",\"value\":\"development\"},{\"name\":\"MYSQL_HOST\",\"value\":\"mysql\"},{\"name\":\"MYSQL_USER\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PASSWORD\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PORT\",\"value\":\"3306\"},{\"name\":\"MYSQL_DATABASE\",\"value\":\"***HIDDEN***\"},{\"name\":\"CUSTOMER_AVATAR_S3_BUCKET\",\"value\":\"products-dev-avatars-3\"},{\"name\":\"SUPPORT_BUNDLE_S3_BUCKET\",\"value\":\"products-dev-supportbundles\"},{\"name\":\"APP_RELEASE_S3_BUCKET\",\"value\":\"products-dev-releases\"},{\"name\":\"GRAPHQL_VENDOR_ENDPOINT\",\"value\":\"http://awesome-api:8013/graphql\"},{\"name\":\"GRAPHQL_PREM_ENDPOINT\",\"value\":\"http://awesome-api-prem:8033/graphql\"},{\"name\":\"ANALYZE_ENDPOINT\",\"value\":\"http://lazy-api:3000\"},{\"name\":\"GITHUB_CLIENT_ID\",\"value\":\"Iv1.64993a1aeb9575e0\"},{\"name\":\"GITHUB_PRIVATE_KEY_FILENAME\",\"value\":\"/secret-mounts/github-app-private-key--dev-only.pem\"},{\"name\":\"GITHUB_INTEGRATION_ID\",\"value\":\"7888\"},{\"name\":\"INSTALL_URL\",\"value\":\"http://localhost:8090\"},{\"name\":\"AWS_ACCESS_KEY_ID\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_SECRET_ACCESS_KEY\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_REGION\",\"value\":\"notaregion\"},{\"name\":\"AWS_OWNER_ACCOUNT\",\"value\":\"***HIDDEN***\"},{\"name\":\"S3_ENDPOINT\",\"value\":\"http://s3:4569\"},{\"name\":\"SERVER_MODE\",\"value\":\"vendor\"},{\"name\":\"NEW_RELIC_APP_NAME\",\"value\":\"awesome-api-vendor\"}],\"image\":\"localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"awesome-api\",\"ports\":[{\"containerPort\":3000,\"name\":\"awesome-api\"}],\"readinessProbe\":{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/healthz\",\"port\":3000,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":2,\"periodSeconds\":2,\"successThreshold\":1,\"timeoutSeconds\":1}}]}}}}\n"
+			  "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"extensions/v1beta1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"},\"name\":\"awesome-api\",\"namespace\":\"default\"},\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"app\":\"awesome-api\",\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"JWT_SIGNING_KEY\",\"value\":\"jwt-signing-key\"},{\"name\":\"TSED_SUPPRESS_ACCESSLOG\",\"value\":\"1\"},{\"name\":\"PINO_LOG_PRETTY\",\"value\":\"1\"},{\"name\":\"PINO_LOG_LEVEL\",\"value\":\"debug\"},{\"name\":\"NODE_ENV\",\"value\":\"development\"},{\"name\":\"MYSQL_HOST\",\"value\":\"mysql\"},{\"name\":\"MYSQL_USER\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PASSWORD\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PORT\",\"value\":\"3306\"},{\"name\":\"MYSQL_DATABASE\",\"value\":\"***HIDDEN***\"},{\"name\":\"CUSTOMER_AVATAR_S3_BUCKET\",\"value\":\"products-dev-avatars-3\"},{\"name\":\"SUPPORT_BUNDLE_S3_BUCKET\",\"value\":\"products-dev-supportbundles\"},{\"name\":\"APP_RELEASE_S3_BUCKET\",\"value\":\"products-dev-releases\"},{\"name\":\"GRAPHQL_VENDOR_ENDPOINT\",\"value\":\"http://awesome-api:8013/graphql\"},{\"name\":\"GRAPHQL_PREM_ENDPOINT\",\"value\":\"http://awesome-api-prem:8033/graphql\"},{\"name\":\"ANALYZE_ENDPOINT\",\"value\":\"http://lazy-api:3000\"},{\"name\":\"GITHUB_CLIENT_ID\",\"value\":\"Iv1.64993a1aeb9575e0\"},{\"name\":\"GITHUB_PRIVATE_KEY_FILENAME\",\"value\":\"***HIDDEN***\"},{\"name\":\"GITHUB_INTEGRATION_ID\",\"value\":\"7888\"},{\"name\":\"INSTALL_URL\",\"value\":\"http://localhost:8090\"},{\"name\":\"AWS_ACCESS_KEY_ID\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_SECRET_ACCESS_KEY\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_REGION\",\"value\":\"notaregion\"},{\"name\":\"AWS_OWNER_ACCOUNT\",\"value\":\"***HIDDEN***\"},{\"name\":\"S3_ENDPOINT\",\"value\":\"http://s3:4569\"},{\"name\":\"SERVER_MODE\",\"value\":\"vendor\"},{\"name\":\"NEW_RELIC_APP_NAME\",\"value\":\"awesome-api-vendor\"}],\"image\":\"localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"awesome-api\",\"ports\":[{\"containerPort\":3000,\"name\":\"awesome-api\"}],\"readinessProbe\":{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/healthz\",\"port\":3000,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":2,\"periodSeconds\":2,\"successThreshold\":1,\"timeoutSeconds\":1}}]}}}}\n"
 			}
 		  },
 		  "spec": {
@@ -996,7 +997,7 @@ func Test_Redactors(t *testing.T) {
 					  },
 					  {
 						"name": "GITHUB_PRIVATE_KEY_FILENAME",
-						"value": "/secret-mounts/github-app-private-key--dev-only.pem"
+						"value": "***HIDDEN***"
 					  },
 					  {
 						"name": "GITHUB_INTEGRATION_ID",
@@ -1221,7 +1222,7 @@ func Test_Redactors(t *testing.T) {
 			},
 			"annotations": {
 			  "deployment.kubernetes.io/revision": "1",
-			  "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"extensions/v1beta1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"},\"name\":\"cranky-api\",\"namespace\":\"default\"},\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"app\":\"cranky-api\",\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"ELASTICSEARCH_NODES\",\"value\":\"http://***HIDDEN***:***HIDDEN***@elasticsearch:9200\"},{\"name\":\"MAX_LOGIN_ATTEMPTS\",\"value\":\"7\"},{\"name\":\"LICENSE_SIGNING_KEY\",\"value\":\"\"},{\"name\":\"JWT_SIGNING_KEY\",\"value\":\"jwt-signing-key\"},{\"name\":\"GITHUB_CLIENT_ID\",\"value\":\"9a92961100c3bd14b991\"},{\"name\":\"GITHUB_CLIENT_SECRET\",\"value\":\"not-a-secret\"},{\"name\":\"LICENSE_API_ENDPOINT\",\"value\":\"http://boring-api:3000\"},{\"name\":\"vendor_assets_bucket\",\"value\":\"replicaetd-vendor-assets-dev\"},{\"name\":\"vendor_web_host\",\"value\":\"http://localhost:8080\"},{\"name\":\"download_web_host\",\"value\":\"http://localhost:8080\"},{\"name\":\"SPEC_V1_PATH\",\"value\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api/spec/v1\"},{\"name\":\"SPEC_V2_PATH\",\"value\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api/spec/v2\"},{\"name\":\"AWS_ACCESS_KEY_ID\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_SECRET_ACCESS_KEY\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_REGION\",\"value\":\"notaregion\"},{\"name\":\"AWS_OWNER_ACCOUNT\",\"value\":\"***HIDDEN***\"},{\"name\":\"SQS_ENDPOINT\",\"value\":\"http://sqs:9324\"},{\"name\":\"RELEASE_UDPATE_SQS_QUEUE\",\"value\":\"preflight-checker\"},{\"name\":\"LICENSE_UDPATE_SQS_QUEUE\",\"value\":\"search-builder\"},{\"name\":\"AWS_SQS_MAIL_QUEUENAME\",\"value\":\"mail-dev\"},{\"name\":\"AWS_SQS_AIRGAP_QUEUENAME\",\"value\":\"airgap-dev\"},{\"name\":\"AWS_SQS_LICENSEAGGREGATOR_QUEUENAME\",\"value\":\"licenseaggregator-dev\"},{\"name\":\"INTEGRATION_API_SQS_QUEUE_NAME\",\"value\":\"integration-api-dev\"},{\"name\":\"BUGSNAG_ENV\",\"value\":\"dev\"},{\"name\":\"VENDOR_REGISTY_HOST\",\"value\":\"https://registry:10443\"},{\"name\":\"VENDOR_REGISTY_ENDPOINT\",\"value\":\"registry:10443\"},{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"},{\"name\":\"ENVIRONMENT\",\"value\":\"dev\"},{\"name\":\"ALLOW_INSECURE_REGISTRY\",\"value\":\"true\"},{\"name\":\"GRAPHQL_API_ADDRESS\",\"value\":\"http://awesome-api:3000/graphql\"},{\"name\":\"PREM_GRAPHQL_API_ADDRESS\",\"value\":\"http://awesome-api-prem:3000/graphql\"},{\"name\":\"GRAPHQL_ENDPOINT\",\"value\":\"http://awesome-api:3000/graphql\"},{\"name\":\"TITLED_ENDPOINT\",\"value\":\"http://gatekeeping-api:3000\"},{\"name\":\"MYSQL_HOST\",\"value\":\"mysql\"},{\"name\":\"MYSQL_USER\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PASSWORD\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PORT\",\"value\":\"3306\"},{\"name\":\"MYSQL_DATABASE\",\"value\":\"***HIDDEN***\"},{\"name\":\"AUDITOR_API_HOST\",\"value\":\"http://api.auditor.svc.cluster.local:3000/auditlog\"},{\"name\":\"AUDITOR_TOKEN\",\"value\":\"***HIDDEN***\"},{\"name\":\"AUDITOR_PROJECTID\",\"value\":\"dev\"},{\"name\":\"PROJECT_NAME\",\"value\":\"cranky-api\"}],\"image\":\"localhost:32000/cranky-api:e9a281f7-dirty@sha256:f6bbd155a2e7325ea93dbc48848eeba7b0e612b8849676df91e647f0d86ece03\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"failureThreshold\":2,\"httpGet\":{\"path\":\"/healthz\",\"port\":8005,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":30,\"periodSeconds\":15,\"timeoutSeconds\":1},\"name\":\"cranky-api\",\"ports\":[{\"containerPort\":8005,\"name\":\"cranky-api\"}],\"readinessProbe\":{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/healthz\",\"port\":8005,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":5,\"periodSeconds\":2,\"successThreshold\":2,\"timeoutSeconds\":1},\"workingDir\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api\"}]}}}}\n"
+			  "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"extensions/v1beta1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"},\"name\":\"cranky-api\",\"namespace\":\"default\"},\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"app\":\"cranky-api\",\"app.kubernetes.io/managed-by\":\"skaffold-v0.32.0\",\"skaffold.dev/builder\":\"local\",\"skaffold.dev/cleanup\":\"true\",\"skaffold.dev/deployer\":\"kustomize\",\"skaffold.dev/docker-api-version\":\"1.39\",\"skaffold.dev/tag-policy\":\"git-commit\",\"skaffold.dev/tail\":\"true\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"ELASTICSEARCH_NODES\",\"value\":\"http://***HIDDEN***:***HIDDEN***@elasticsearch:9200\"},{\"name\":\"MAX_LOGIN_ATTEMPTS\",\"value\":\"7\"},{\"name\":\"LICENSE_SIGNING_KEY\",\"value\":\"\"},{\"name\":\"JWT_SIGNING_KEY\",\"value\":\"jwt-signing-key\"},{\"name\":\"GITHUB_CLIENT_ID\",\"value\":\"9a92961100c3bd14b991\"},{\"name\":\"GITHUB_CLIENT_SECRET\",\"value\":\"***HIDDEN***\"},{\"name\":\"LICENSE_API_ENDPOINT\",\"value\":\"http://boring-api:3000\"},{\"name\":\"vendor_assets_bucket\",\"value\":\"replicaetd-vendor-assets-dev\"},{\"name\":\"vendor_web_host\",\"value\":\"http://localhost:8080\"},{\"name\":\"download_web_host\",\"value\":\"http://localhost:8080\"},{\"name\":\"SPEC_V1_PATH\",\"value\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api/spec/v1\"},{\"name\":\"SPEC_V2_PATH\",\"value\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api/spec/v2\"},{\"name\":\"AWS_ACCESS_KEY_ID\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_SECRET_ACCESS_KEY\",\"value\":\"***HIDDEN***\"},{\"name\":\"AWS_REGION\",\"value\":\"notaregion\"},{\"name\":\"AWS_OWNER_ACCOUNT\",\"value\":\"***HIDDEN***\"},{\"name\":\"SQS_ENDPOINT\",\"value\":\"http://sqs:9324\"},{\"name\":\"RELEASE_UDPATE_SQS_QUEUE\",\"value\":\"preflight-checker\"},{\"name\":\"LICENSE_UDPATE_SQS_QUEUE\",\"value\":\"search-builder\"},{\"name\":\"AWS_SQS_MAIL_QUEUENAME\",\"value\":\"mail-dev\"},{\"name\":\"AWS_SQS_AIRGAP_QUEUENAME\",\"value\":\"airgap-dev\"},{\"name\":\"AWS_SQS_LICENSEAGGREGATOR_QUEUENAME\",\"value\":\"licenseaggregator-dev\"},{\"name\":\"INTEGRATION_API_SQS_QUEUE_NAME\",\"value\":\"integration-api-dev\"},{\"name\":\"BUGSNAG_ENV\",\"value\":\"dev\"},{\"name\":\"VENDOR_REGISTY_HOST\",\"value\":\"https://registry:10443\"},{\"name\":\"VENDOR_REGISTY_ENDPOINT\",\"value\":\"registry:10443\"},{\"name\":\"LOG_LEVEL\",\"value\":\"debug\"},{\"name\":\"ENVIRONMENT\",\"value\":\"dev\"},{\"name\":\"ALLOW_INSECURE_REGISTRY\",\"value\":\"true\"},{\"name\":\"GRAPHQL_API_ADDRESS\",\"value\":\"http://awesome-api:3000/graphql\"},{\"name\":\"PREM_GRAPHQL_API_ADDRESS\",\"value\":\"http://awesome-api-prem:3000/graphql\"},{\"name\":\"GRAPHQL_ENDPOINT\",\"value\":\"http://awesome-api:3000/graphql\"},{\"name\":\"TITLED_ENDPOINT\",\"value\":\"http://gatekeeping-api:3000\"},{\"name\":\"MYSQL_HOST\",\"value\":\"mysql\"},{\"name\":\"MYSQL_USER\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PASSWORD\",\"value\":\"***HIDDEN***\"},{\"name\":\"MYSQL_PORT\",\"value\":\"3306\"},{\"name\":\"MYSQL_DATABASE\",\"value\":\"***HIDDEN***\"},{\"name\":\"AUDITOR_API_HOST\",\"value\":\"http://api.auditor.svc.cluster.local:3000/auditlog\"},{\"name\":\"AUDITOR_TOKEN\",\"value\":\"***HIDDEN***\"},{\"name\":\"AUDITOR_PROJECTID\",\"value\":\"dev\"},{\"name\":\"PROJECT_NAME\",\"value\":\"cranky-api\"}],\"image\":\"localhost:32000/cranky-api:e9a281f7-dirty@sha256:f6bbd155a2e7325ea93dbc48848eeba7b0e612b8849676df91e647f0d86ece03\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"failureThreshold\":2,\"httpGet\":{\"path\":\"/healthz\",\"port\":8005,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":30,\"periodSeconds\":15,\"timeoutSeconds\":1},\"name\":\"cranky-api\",\"ports\":[{\"containerPort\":8005,\"name\":\"cranky-api\"}],\"readinessProbe\":{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/healthz\",\"port\":8005,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":5,\"periodSeconds\":2,\"successThreshold\":2,\"timeoutSeconds\":1},\"workingDir\":\"/go/src/github.com/somebigbankhq/vandam/cranky-api\"}]}}}}\n"
 			}
 		  },
 		  "spec": {
@@ -1287,7 +1288,7 @@ func Test_Redactors(t *testing.T) {
 					  },
 					  {
 						"name": "GITHUB_CLIENT_SECRET",
-						"value": "not-a-secret"
+						"value": "***HIDDEN***"
 					  },
 					  {
 						"name": "LICENSE_API_ENDPOINT",
@@ -1719,8 +1720,8 @@ func Test_Redactors(t *testing.T) {
 		}
 	  ]`
 
-	wantRedactionsLen := 43
-	wantRedactionsCount := 25
+	wantRedactionsLen := 48
+	wantRedactionsCount := 29
 
 	t.Run("test default redactors", func(t *testing.T) {
 		req := require.New(t)
@@ -1744,6 +1745,154 @@ func Test_Redactors(t *testing.T) {
 		req.Len(actualRedactions.ByRedactor, wantRedactionsCount)
 		ResetRedactionList()
 	})
+}
+
+// Connection strings are commonly written without a trailing database name, e.g.
+// "postgres://user:password@host:5432". The default redactors that mask the host and
+// database name only match when a database name is present, so credentials in these
+// URIs are masked by a separate redactor.
+func Test_DefaultRedactors_ConnectionStrings(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "postgres uri with database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432/pg_database",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***",
+		},
+		{
+			name:  "postgres uri without database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host:5432",
+		},
+		{
+			name:  "postgres uri without port or database name",
+			input: "postgres://pg_user:pg_password@pg_host",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host",
+		},
+		{
+			name:  "postgres uri with query parameters instead of a database name",
+			input: "postgres://pg_user:pg_password@pg_host:5432?sslmode=require",
+			want:  "postgres://***HIDDEN***:***HIDDEN***@pg_host:5432?sslmode=require",
+		},
+		{
+			name:  "mysql uri without database name",
+			input: "mysql://my_user:my_password@my_host:3306",
+			want:  "mysql://***HIDDEN***:***HIDDEN***@my_host:3306",
+		},
+		{
+			name:  "redis uri without database name",
+			input: "redis://redis_user:redis_password@redis_host:6379",
+			want:  "redis://***HIDDEN***:***HIDDEN***@redis_host:6379",
+		},
+		{
+			name:  "amqp uri with a trailing slash and no database name",
+			input: "amqp://rabbit_user:rabbit_password@rabbit_host:5672/",
+			want:  "amqp://***HIDDEN***:***HIDDEN***@rabbit_host:5672/",
+		},
+		{
+			name:  "uri without database name in json",
+			input: `{"name":"DB_URI","value":"mongodb://mongo_user:mongo_password@mongo_host:27017"}`,
+			want:  `{"name":"DB_URI","value":"mongodb://***HIDDEN***:***HIDDEN***@mongo_host:27017"}`,
+		},
+		{
+			name:  "http url with credentials",
+			input: "http://user:password@host:8888",
+			want:  "http://***HIDDEN***:***HIDDEN***@host:8888",
+		},
+		{
+			name:  "mysql dsn with database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(***HIDDEN***:3309)/***HIDDEN***",
+		},
+		{
+			name:  "mysql dsn without database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "mysql dsn with a trailing slash and no database name",
+			input: "dbuser:thisisasecret@tcp(dbserver.org:3309)/",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/",
+		},
+		{
+			name:  "mysql dsn over tcp6 with database name",
+			input: "dbuser:thisisasecret@tcp6(dbserver.org:3306)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp6(***HIDDEN***:3306)/***HIDDEN***",
+		},
+		{
+			name:  "mysql dsn over tcp6 with an ipv6 address and no database name",
+			input: "dbuser:thisisasecret@tcp6([::1]:3306)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp6([::1]:3306)",
+		},
+		{
+			name:  "mysql dsn over tcp4 without database name",
+			input: "dbuser:thisisasecret@tcp4(dbserver.org:3306)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp4(dbserver.org:3306)",
+		},
+		{
+			name:  "mysql dsn over a unix socket",
+			input: "dbuser:thisisasecret@unix(/var/run/mysqld/mysqld.sock)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@unix(/var/run/mysqld/mysqld.sock)/blog_production",
+		},
+		{
+			name:  "mysql dsn with a slash in the password",
+			input: "dbuser:this/is/a/secret@tcp(dbserver.org:3309)",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "mysql dsn with a slash in the password and a database name",
+			input: "dbuser:this/is/a/secret@tcp(dbserver.org:3309)/blog_production",
+			want:  "***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)/blog_production",
+		},
+		{
+			name:  "mysql dsn in a log line",
+			input: "INFO connecting to dbuser:thisisasecret@tcp(dbserver.org:3309)",
+			want:  "INFO connecting to ***HIDDEN***:***HIDDEN***@tcp(dbserver.org:3309)",
+		},
+		{
+			name:  "url without credentials is not redacted",
+			input: "http://awesome-api:8013/graphql",
+			want:  "http://awesome-api:8013/graphql",
+		},
+		{
+			name:  "url without credentials or path is not redacted",
+			input: "https://registry:10443",
+			want:  "https://registry:10443",
+		},
+		{
+			name:  "image reference is not redacted",
+			input: "image: localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925",
+			want:  "image: localhost:32000/awesome-api:e9a281f7@sha256:6e988461ffce2bac3561234f736b9a504bfda1911fa6432b90e6bbb16f67f925",
+		},
+		{
+			name:  "ssh remote is not redacted",
+			input: "git@github.com:replicatedhq/troubleshoot.git",
+			want:  "git@github.com:replicatedhq/troubleshoot.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+			defer ResetRedactionList()
+
+			redactors, err := getRedactors("testpath")
+			req.NoError(err)
+
+			nextReader := io.Reader(strings.NewReader(tt.input))
+			for _, r := range redactors {
+				nextReader = r.Redact(nextReader, "testpath")
+			}
+
+			redacted, err := io.ReadAll(nextReader)
+			req.NoError(err)
+			req.Equal(tt.want, string(redacted))
+		})
+	}
 }
 
 func Test_redactMatchesPath(t *testing.T) {
@@ -1873,4 +2022,203 @@ func Test_redactMatchesPath(t *testing.T) {
 			req.Equal(tt.want, got)
 		})
 	}
+}
+
+func Test_RedactKurlInstallerJSON(t *testing.T) {
+	input := `[
+  {
+    "metadata": {
+      "name": "kurl",
+      "annotations": {
+        "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"cluster.kurl.sh/v1beta1\",\"kind\":\"Installer\",\"spec\":{\"kubernetes\":{\"bootstrapToken\":\"abc\",\"certKey\":\"def\",\"kubeadmToken\":\"ghi\"}}}"
+      }
+    },
+    "spec": {
+      "kubernetes": {
+        "bootstrapToken": "abc",
+        "certKey": "def",
+        "kubeadmToken": "ghi"
+      }
+    }
+  }
+]`
+
+	cases := []string{
+		// Cluster-scoped installer (file directly under custom-resources)
+		"cluster-resources/custom-resources/installers.cluster.kurl.sh.json",
+		// Namespaced installer (file under a per-CRD directory)
+		"cluster-resources/custom-resources/installers.cluster.kurl.sh/default.json",
+	}
+
+	for _, path := range cases {
+		t.Run(path, func(t *testing.T) {
+			r, err := Redact(strings.NewReader(input), path, nil)
+			require.NoError(t, err)
+
+			out, err := ioutil.ReadAll(r)
+			require.NoError(t, err)
+
+			outStr := string(out)
+			require.NotContains(t, outStr, `"abc"`)
+			require.NotContains(t, outStr, `"def"`)
+			require.NotContains(t, outStr, `"ghi"`)
+			require.Contains(t, outStr, `"bootstrapToken": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"certKey": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"kubeadmToken": "***HIDDEN***"`)
+			require.Contains(t, outStr, `"kubectl.kubernetes.io/last-applied-configuration": "***HIDDEN***"`)
+		})
+	}
+}
+
+func Test_RedactCredentialEnvNames(t *testing.T) {
+	tests := []struct {
+		envName  string
+		redacted bool
+	}{
+		// api keys
+		{envName: "OPENAI_API_KEY", redacted: true},
+		{envName: "STRIPE_APIKEY", redacted: true},
+		{envName: "SENDGRID_API-KEY", redacted: true},
+		// secrets
+		{envName: "GITHUB_CLIENT_SECRET", redacted: true},
+		{envName: "OIDC_CLIENT_SECRET", redacted: true},
+		{envName: "SECRET", redacted: true},
+		// authorization
+		{envName: "AUTH_HEADER", redacted: true},
+		{envName: "AUTHORIZATION", redacted: true},
+		// private keys
+		{envName: "PRIVATE_KEY", redacted: true},
+		{envName: "TLS_PRIVATEKEY", redacted: true},
+		// credentials
+		{envName: "GOOGLE_APPLICATION_CREDENTIALS", redacted: true},
+		{envName: "DOCKER_CREDS", redacted: true},
+		// the patterns are case insensitive, and match anywhere in the name
+		{envName: "openai_api_key", redacted: true},
+		{envName: "Api_Key", redacted: true},
+		{envName: "X_API_KEY_HEADER", redacted: true},
+		// names that carry no credential, and must survive untouched
+		{envName: "LOG_LEVEL", redacted: false},
+		{envName: "NODE_ENV", redacted: false},
+		{envName: "MAX_LOGIN_ATTEMPTS", redacted: false},
+		// `creds` must not swallow unrelated words starting with "cred"
+		{envName: "CREDIT_LIMIT", redacted: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.envName, func(t *testing.T) {
+			req := require.New(t)
+
+			// escaped JSON, where name and value share a line
+			singleLine := fmt.Sprintf(`{\"name\":\"%s\",\"value\":\"super-sensitive\"}`, tt.envName)
+			// indented JSON, where name and value land on separate lines
+			multiLine := fmt.Sprintf("{\n  \"name\": \"%s\",\n  \"value\": \"super-sensitive\"\n}", tt.envName)
+
+			for _, input := range []string{singleLine, multiLine} {
+				ResetRedactionList()
+				out, err := Redact(strings.NewReader(input), "testpath", nil)
+				req.NoError(err)
+
+				redacted, err := ioutil.ReadAll(out)
+				req.NoError(err)
+
+				if tt.redacted {
+					req.NotContains(string(redacted), "super-sensitive", "input: %s", input)
+					req.Contains(string(redacted), MASK_TEXT, "input: %s", input)
+				} else {
+					req.Contains(string(redacted), "super-sensitive", "input: %s", input)
+				}
+			}
+			ResetRedactionList()
+		})
+	}
+}
+
+// A credential value containing an escaped quote must be masked in full. The
+// mask group excludes bare quotes, so without an explicit alternative for the
+// `\\\"` sequence it stops at the first embedded quote and leaves the tail of
+// the secret in cleartext.
+func Test_RedactEscapedQuotesInValue(t *testing.T) {
+	envNames := []string{
+		// covered by the patterns added for credential env names
+		"OPENAI_API_KEY",
+		"GITHUB_CLIENT_SECRET",
+		"PRIVATE_KEY",
+		// covered by the pre-existing built-ins
+		"MYSQL_PASSWORD",
+		"AUDITOR_TOKEN",
+		"MYSQL_USER",
+		"MYSQL_DATABASE",
+		"AWS_SECRET_ACCESS_KEY",
+		"AWS_ACCESS_KEY_ID",
+		"AWS_OWNER_ACCOUNT",
+	}
+
+	for _, envName := range envNames {
+		t.Run(envName, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+
+			input := fmt.Sprintf(`{\"name\":\"%s\",\"value\":\"super\\\"sensitive\"}`, envName)
+			out, err := Redact(strings.NewReader(input), "testpath", nil)
+			req.NoError(err)
+
+			redacted, err := ioutil.ReadAll(out)
+			req.NoError(err)
+
+			req.NotContains(string(redacted), "sensitive")
+			req.Contains(string(redacted), MASK_TEXT)
+			ResetRedactionList()
+		})
+	}
+}
+
+// The `auth` and `secret` patterns are deliberately broad substrings, so they
+// also catch names that describe a credential rather than carry one. These
+// cases pin that behaviour: over-redaction is the accepted trade for not
+// leaking, and narrowing a pattern later should show up here as a deliberate
+// change rather than a silent one.
+func Test_RedactCredentialEnvNamesOverMatches(t *testing.T) {
+	overMatched := []string{
+		"AUTHORITY_URL",
+		"AUTHOR_EMAIL",
+		"OAUTH2_ISSUER",
+		"SECRET_NAME",
+		"GITHUB_PRIVATE_KEY_FILENAME",
+	}
+
+	for _, envName := range overMatched {
+		t.Run(envName, func(t *testing.T) {
+			req := require.New(t)
+			ResetRedactionList()
+
+			input := fmt.Sprintf(`{\"name\":\"%s\",\"value\":\"not-a-secret\"}`, envName)
+			out, err := Redact(strings.NewReader(input), "testpath", nil)
+			req.NoError(err)
+
+			redacted, err := ioutil.ReadAll(out)
+			req.NoError(err)
+
+			req.Contains(string(redacted), MASK_TEXT)
+			ResetRedactionList()
+		})
+	}
+}
+
+// An env var explicitly set to the empty string is masked too, since the mask
+// group matches zero characters. That is pre-existing behaviour shared with the
+// built-in password and token redactors, and it costs a small diagnostic signal:
+// "set but empty" becomes indistinguishable from "set to a secret".
+func Test_RedactCredentialEnvNamesEmptyValue(t *testing.T) {
+	req := require.New(t)
+	ResetRedactionList()
+
+	input := `{\"name\":\"API_KEY\",\"value\":\"\"}`
+	out, err := Redact(strings.NewReader(input), "testpath", nil)
+	req.NoError(err)
+
+	redacted, err := ioutil.ReadAll(out)
+	req.NoError(err)
+
+	req.Contains(string(redacted), MASK_TEXT)
+	ResetRedactionList()
 }

@@ -36,6 +36,9 @@ jobs:
             support-bundle:
               - 'cmd/troubleshoot/**'
               - 'pkg/supportbundle/**'
+            examples:
+              - 'examples/**'
+              - 'go.{mod,sum}'
 
   # Lint
   lint:
@@ -103,6 +106,21 @@ jobs:
           name: binaries
           path: bin/
           retention-days: 1
+
+  # Build SDK/Helm example module
+  build-examples:
+    if: needs.changes.outputs.examples == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go.mod'
+      - name: Build helm-template example
+        working-directory: examples/sdk/helm-template
+        run: make build
 
   # Minimal linux architecture smoke tests
   linux-arch-smoke:
@@ -271,7 +289,7 @@ jobs:
   # Success summary
   success:
     if: always()
-    needs: [lint, test, build, linux-arch-smoke, e2e]
+    needs: [lint, test, build, build-examples, linux-arch-smoke, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -280,16 +298,18 @@ jobs:
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
              [[ "${{ needs.test.result }}" == "failure" ]] || \
              [[ "${{ needs.build.result }}" == "failure" ]] || \
+             [[ "${{ needs.build-examples.result }}" == "failure" ]] || \
              [[ "${{ needs.linux-arch-smoke.result }}" == "failure" ]] || \
              [[ "${{ needs.e2e.result }}" == "failure" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
           fi
-          
-          # Check if any required jobs were cancelled  
+
+          # Check if any required jobs were cancelled
           if [[ "${{ needs.lint.result }}" == "cancelled" ]] || \
              [[ "${{ needs.test.result }}" == "cancelled" ]] || \
              [[ "${{ needs.build.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.build-examples.result }}" == "cancelled" ]] || \
              [[ "${{ needs.linux-arch-smoke.result }}" == "cancelled" ]] || \
              [[ "${{ needs.e2e.result }}" == "cancelled" ]]; then
             echo "::error::Some jobs failed or were cancelled"

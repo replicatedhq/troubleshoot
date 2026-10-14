@@ -352,6 +352,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.digitalOcean
 	case openShift:
 		isMatch = actual.openShift
+	case tanzu:
+		isMatch = actual.tanzu
 	case kurl:
 		isMatch = actual.kurl
 	case aks:

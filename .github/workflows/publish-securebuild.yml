@@ -1,0 +1,101 @@
+name: publish-securebuild
+
+env:
+  SECUREBUILD_CLI_VERSION: v0.0.498
+  SECUREBUILD_CLI_SHA256: d259aa99d85aef957fe1e40c6f26e1983cc7fd72277e08599a82adc6681d3b37
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Stable version tag to build (for example, v0.130.0)
+        required: true
+        type: string
+    secrets:
+      SECUREBUILD_API_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version tag to build (for example, v0.130.0)
+        required: true
+        type: string
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require a stable release version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "SecureBuild only supports stable release versions (for example, v0.130.0): $VERSION"
+            exit 1
+          fi
+
+  build-package:
+    needs: validate-version
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Set version
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install SecureBuild CLI
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://github.com/securebuildhq/securebuild/releases/download/${SECUREBUILD_CLI_VERSION}/securebuild-cli-linux-amd64" \
+            --output securebuild
+          echo "${SECUREBUILD_CLI_SHA256}  securebuild" | sha256sum --check --strict
+          chmod +x securebuild
+
+      - name: Build package
+        env:
+          SECUREBUILD_API_TOKEN: ${{ secrets.SECUREBUILD_API_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./securebuild build package \
+            --package-family-name troubleshoot \
+            --tag "$VERSION" \
+            --api-token "$SECUREBUILD_API_TOKEN"
+
+  build-image:
+    needs: build-package
+    if: ${{ !cancelled() && needs.build-package.result == 'success' }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image-name:
+          - troubleshoot
+          - preflight
+    steps:
+      - name: Install SecureBuild CLI
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://github.com/securebuildhq/securebuild/releases/download/${SECUREBUILD_CLI_VERSION}/securebuild-cli-linux-amd64" \
+            --output securebuild
+          echo "${SECUREBUILD_CLI_SHA256}  securebuild" | sha256sum --check --strict
+          chmod +x securebuild
+
+      - name: Build image
+        env:
+          IMAGE_NAME: ${{ matrix.image-name }}
+          SECUREBUILD_API_TOKEN: ${{ secrets.SECUREBUILD_API_TOKEN }}
+          VERSION: ${{ needs.build-package.outputs.version }}
+        run: |
+          IMAGE_VERSION="${VERSION#v}"
+          MAJOR_MINOR_VERSION="${IMAGE_VERSION%.*}"
+          MAJOR_VERSION="${IMAGE_VERSION%%.*}"
+
+          ./securebuild build image \
+            --image-name "$IMAGE_NAME" \
+            --tag "$VERSION" \
+            --image-tag "$MAJOR_MINOR_VERSION" \
+            --image-tag "$MAJOR_VERSION" \
+            --image-tag latest \
+            --api-token "$SECUREBUILD_API_TOKEN"

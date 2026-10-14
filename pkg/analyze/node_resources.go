@@ -219,6 +219,8 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	switch function {
 	case "count":
 		actualValue = len(matchingNodes)
+	case "countDistinct":
+		actualValue = countDistinctLabelValues(matchingNodes, property)
 	case "min":
 		actualValue = findMin(matchingNodes, property, resourceName)
 	case "max":
@@ -366,6 +368,19 @@ func getQuantity(node corev1.Node, property string, resourceName string) *resour
 		return &allocatable
 	}
 	return nil
+}
+
+// countDistinctLabelValues returns the number of distinct values of labelKey
+// across the given nodes. Nodes missing the label are ignored, so an absent
+// label yields 0.
+func countDistinctLabelValues(nodes []corev1.Node, labelKey string) int {
+	seen := map[string]struct{}{}
+	for _, node := range nodes {
+		if v, ok := node.Labels[labelKey]; ok {
+			seen[v] = struct{}{}
+		}
+	}
+	return len(seen)
 }
 
 func findSum(nodes []corev1.Node, property string, resourceName string) *resource.Quantity {

@@ -1,8 +1,12 @@
 package analyzer
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -64,6 +68,30 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 				embeddedCluster: true,
 			},
 			expected: true,
+		},
+		{
+			name:        "== tanzu when tanzu is found",
+			conditional: "== tanzu",
+			input: providers{
+				tanzu: true,
+			},
+			expected: true,
+		},
+		{
+			name:        "!= tanzu when tanzu is found",
+			conditional: "!= tanzu",
+			input: providers{
+				tanzu: true,
+			},
+			expected: false,
+		},
+		{
+			name:        "== tanzu when a different distribution is found",
+			conditional: "== tanzu",
+			input: providers{
+				openShift: true,
+			},
+			expected: false,
 		},
 	}
 	for _, test := range tests {
@@ -159,6 +187,14 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 			raw:      "docker-desktop",
 			expected: dockerDesktop,
 		},
+		{
+			raw:      "tanzu",
+			expected: tanzu,
+		},
+		{
+			raw:      "Tanzu",
+			expected: tanzu,
+		},
 	}
 
 	for _, test := range tests {
@@ -250,6 +286,76 @@ func TestParseNodesForProviders(t *testing.T) {
 			assert.Equalf(t, tt.wantProviderString, stringProvider,
 				"ParseNodesForProviders() gotStringProvider = %v, stringProvider %v", stringProvider, tt.wantProviderString,
 			)
+		})
+	}
+}
+
+func TestAnalyzeDistribution_tanzu(t *testing.T) {
+	// A VMware Tanzu (TKG/VKS) node as collected in the field: the distribution
+	// version label is present on every node, and the supervisor exposes the
+	// run.tanzu.vmware.com API group.
+	tanzuNodes := `{"kind":"NodeList","apiVersion":"v1","items":[{"metadata":{"name":"tkg-node","labels":{` +
+		`"kubernetes.io/arch":"amd64",` +
+		`"node-role.kubernetes.io/control-plane":"",` +
+		`"run.tanzu.vmware.com/kubernetesDistributionVersion":"v1.29.4---vmware.3-fips.1-tkg.1",` +
+		`"run.tanzu.vmware.com/tkr":"v1.29.4---vmware.3-fips.1-tkg.1"` +
+		`}},"spec":{"providerID":"vsphere://421ff733-a840-e1c3-55cb-6320ab2b5432"},` +
+		`"status":{"nodeInfo":{"kubeletVersion":"v1.29.4+vmware.3-fips.1","osImage":"VMware Photon OS/Linux"}}}]}`
+	tanzuAPIResources := `[{"groupVersion":"v1","resources":[]},{"groupVersion":"run.tanzu.vmware.com/v1alpha1","resources":[]}]`
+
+	nodesPath := fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES)
+	resourcesPath := fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_RESOURCES)
+
+	tests := []struct {
+		name  string
+		files map[string]string
+	}{
+		{
+			// Detection via node labels alone, e.g. a workload cluster where the
+			// run.tanzu.vmware.com API group is not exposed.
+			name:  "node labels only",
+			files: map[string]string{nodesPath: tanzuNodes},
+		},
+		{
+			name:  "node labels and api resources",
+			files: map[string]string{nodesPath: tanzuNodes, resourcesPath: tanzuAPIResources},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			getFiles := func(path string) ([]byte, error) {
+				contents, ok := test.files[path]
+				if !ok {
+					return nil, errors.Errorf("file %s not collected", path)
+				}
+				return []byte(contents), nil
+			}
+
+			a := AnalyzeDistribution{
+				analyzer: &troubleshootv1beta2.Distribution{
+					Outcomes: []*troubleshootv1beta2.Outcome{
+						{
+							Pass: &troubleshootv1beta2.SingleOutcome{
+								When:    "== tanzu",
+								Message: "Tanzu is a supported distribution",
+							},
+						},
+						{
+							Fail: &troubleshootv1beta2.SingleOutcome{
+								Message: "unrecognized distro",
+							},
+						},
+					},
+				},
+			}
+
+			results, err := a.Analyze(getFiles, nil)
+			require.NoError(t, err)
+			require.Len(t, results, 1)
+
+			assert.True(t, results[0].IsPass, "expected the tanzu outcome to pass, got %+v", results[0])
+			assert.Equal(t, "Tanzu is a supported distribution", results[0].Message)
 		})
 	}
 }
