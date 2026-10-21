@@ -1,6 +1,6 @@
 module helm-template
 
-go 1.26.5
+go 1.26.10
 
 // Always use the local version of troubleshoot so as to build using
 // the latest version of the library. This will ensure the example
