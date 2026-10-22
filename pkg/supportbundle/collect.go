@@ -262,6 +262,14 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	return collectResult, nil
 }
 
+// bundleDirPath returns the directory inside tmpDir that holds the bundle
+// contents before they are archived to filename. Only the base name of
+// filename is used: filename is usually absolute, and joining an absolute
+// Windows path (with its drive letter) onto tmpDir gives an invalid path.
+func bundleDirPath(tmpDir, filename string) string {
+	return filepath.Join(tmpDir, strings.TrimSuffix(filepath.Base(filename), ".tar.gz"))
+}
+
 func findFileName(basename, extension string) (string, error) {
 	n := 1
 	name := basename
