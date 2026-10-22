@@ -9,7 +9,7 @@ replace github.com/replicatedhq/troubleshoot v0.0.0 => ../../../
 
 require (
 	github.com/replicatedhq/troubleshoot v0.0.0
-	helm.sh/helm/v3 v3.22.0
+	helm.sh/helm/v3 v3.22.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -42,7 +42,7 @@ require (
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/huandu/xstrings v1.6.2 // indirect
+	github.com/huandu/xstrings v1.6.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
-	github.com/shopspring/decimal v1.5.0 // indirect
+	github.com/shopspring/decimal v1.6.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
