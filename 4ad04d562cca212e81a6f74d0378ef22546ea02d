@@ -1,0 +1,21 @@
+examples/sdk/helm-template/go.mod
+  s_9ddbf51a74573c::t_d2ba12538dbde3 24-25,27-28,45,54,59-60,62-64
+examples/sdk/helm-template/go.sum
+  s_9ddbf51a74573c::t_feeea18b1e309c 3-4,19-22,25-26,29-32,59-62,78-79,98-102,112-113,130-135,138-145,148-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ad04d562cca212e81a6f74d0378ef22546ea02d",
+  "prompts": {},
+  "sessions": {
+    "s_9ddbf51a74573c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ecc4074cdffeTA3Oyfed2XmUsD",
+        "model": "accounts/fireworks/routers/kimi-latest"
+      },
+      "human_author": "ElasticClaw Factory <factory@replicated.com>"
+    }
+  }
+}
