@@ -1,0 +1,45 @@
+docs/host-time-reference.md
+  s_84c928d021a21b::t_205c39dcb9c2f6 1-4,6-21,23-33,35-46,49-54
+  s_84c928d021a21b::t_a9902a8d3c7692 5,22,34,47-48
+pkg/collect/host_time_others.go
+  s_49c73e75e4ce86::t_445a57161f34ce 1-7
+pkg/collect/host_time_linux.go
+  s_49c73e75e4ce86::t_8db2d7f8113318 1-28,31-50,52-54
+  s_84c928d021a21b::t_d7f8637df86565 29-30,51
+pkg/analyze/host_time_hypervisor_test.go
+  s_84c928d021a21b::t_f6ba335d9a84ed 1-94
+pkg/analyze/host_time.go
+  s_84c928d021a21b::t_f6ba335d9a84ed 72-85
+pkg/collect/host_time_linux_test.go
+  s_49c73e75e4ce86::t_67aa7ad7e4d54e 1-51
+pkg/collect/host_time.go
+  s_84c928d021a21b::t_f6ba335d9a84ed 9,19-52,54-61,66-76,149-152
+  s_84c928d021a21b::t_628536c53ea1a0 153
+  s_84c928d021a21b::t_40ac1f8a90387a 53,62-65
+pkg/collect/host_time_test.go
+  s_84c928d021a21b::t_926dfb04892ea9 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "34e00e5e31204e5a40842c427d0cb3942f27ada1",
+  "prompts": {},
+  "sessions": {
+    "s_49c73e75e4ce86": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116c0-ca51-7111-a924-b5bdac2146db",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Noah Campbell <noah.edward.campbell@gmail.com>"
+    },
+    "s_84c928d021a21b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a130c2-e782-73a1-bd66-bd3c909bf8d6",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Noah Campbell <noah.edward.campbell@gmail.com>"
+    }
+  }
+}
