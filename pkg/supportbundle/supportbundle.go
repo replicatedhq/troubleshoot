@@ -120,7 +120,7 @@ func CollectSupportBundleFromSpec(
 	}
 	resultsResponse.ArchivePath = filename
 
-	bundlePath := filepath.Join(tmpDir, strings.TrimSuffix(filename, ".tar.gz"))
+	bundlePath := bundleDirPath(tmpDir, filename)
 	if err := os.MkdirAll(bundlePath, 0777); err != nil {
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
