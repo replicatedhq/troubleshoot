@@ -133,6 +133,11 @@ func Test_parseVersionString(t *testing.T) {
 			rawVersion: "v1.25.16-eks-8cb36c9",
 			want:       semver.MustParse("1.25.16"),
 		},
+		{
+			name:       "GKE version",
+			rawVersion: "v1.30.5-gke.1014001",
+			want:       semver.MustParse("1.30.5"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

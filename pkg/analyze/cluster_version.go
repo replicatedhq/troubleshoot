@@ -60,8 +60,9 @@ func title(checkName string) string {
 
 func parseK8sVersionString(version string) (semver.Version, error) {
 	// Workaround for https://github.com/aws/containers-roadmap/issues/1404
-	// for EKS, replace pre-release gitVersion string with the release version
-	if strings.Contains(version, "-eks-") {
+	// for EKS (v1.25.16-eks-8cb36c9) and GKE (v1.30.5-gke.1014001), replace
+	// pre-release gitVersion string with the release version
+	if strings.Contains(version, "-eks-") || strings.Contains(version, "-gke.") {
 		version = strings.Split(version, "-")[0]
 	}
 
