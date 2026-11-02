@@ -1,0 +1,21 @@
+pkg/collect/host_time_linux.go
+  s_90b57ed7a6fb34::t_c9eb7852acf50e 6,25,29-30,39-40,50,53-61,63,65
+docs/host-time-reference.md
+  s_90b57ed7a6fb34::t_43ef6480f82d8a 32-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f0911809aa296551ab94a948ebb25437f189ca50",
+  "prompts": {},
+  "sessions": {
+    "s_90b57ed7a6fb34": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14615-1185-7ec0-a592-601828572351",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Noah Campbell <noah.edward.campbell@gmail.com>"
+    }
+  }
+}
