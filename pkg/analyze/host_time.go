@@ -69,6 +69,20 @@ func compareHostTimeStatusToActual(status string, timeInfo collect.TimeInfo) (re
 		return parts[2] == timeInfo.Timezone, nil
 	}
 
+	if parts[0] == "clock" {
+		if parts[1] != "=" && parts[1] != "==" && parts[1] != "===" {
+			return false, errors.New(`Only supported operator is "=="`)
+		}
+		switch parts[2] {
+		case "synchronized":
+			return timeInfo.ClockSynchronized(), nil
+		case "unsynchronized":
+			return !timeInfo.ClockSynchronized(), nil
+		default:
+			return false, fmt.Errorf("Unknown clock status %q. Allowed values are synchronized or unsynchronized", parts[2])
+		}
+	}
+
 	if parts[0] == "ntp" {
 		if parts[1] != "=" && parts[1] != "==" && parts[1] != "===" {
 			return false, errors.New(`Only supported operator is "=="`)
