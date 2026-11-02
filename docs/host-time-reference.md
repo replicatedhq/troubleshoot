@@ -29,6 +29,8 @@ The collector adds an optional `hypervisor_clock` object to
 (system time minus reference time), and `read_duration_nanoseconds`.
 `hypervisor_clock_error` records failures to read a PTP clock's name or to read
 a recognized device.
+The collector tries subsequent devices after a failure and reports these errors
+only if no valid sample is found.
 The original NTP fields are retained, so a report can show NTP unsynchronized
 while the clock check passes using the measured hypervisor reference.
 

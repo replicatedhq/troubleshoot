@@ -3,6 +3,7 @@
 package collect
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,10 +22,12 @@ func collectHypervisorClockFrom(sysDirectory, deviceDirectory string) (*Hypervis
 	if err != nil {
 		return nil, fmt.Errorf("find hypervisor clock: %w", err)
 	}
+	var failures []error
 	for _, path := range paths {
 		name, err := os.ReadFile(path)
 		if err != nil {
-			return nil, fmt.Errorf("read PTP clock name: %w", err)
+			failures = append(failures, fmt.Errorf("read PTP clock name: %w", err))
+			continue
 		}
 		source := strings.TrimSpace(string(name))
 		if !isHypervisorClock(source) {
@@ -33,7 +36,8 @@ func collectHypervisorClockFrom(sysDirectory, deviceDirectory string) (*Hypervis
 		device := filepath.Join(deviceDirectory, filepath.Base(filepath.Dir(path)))
 		file, err := os.Open(device)
 		if err != nil {
-			return nil, fmt.Errorf("open hypervisor clock: %w", err)
+			failures = append(failures, fmt.Errorf("open hypervisor clock: %w", err))
+			continue
 		}
 		before := time.Now()
 		var timestamp unix.Timespec
@@ -43,12 +47,20 @@ func collectHypervisorClockFrom(sysDirectory, deviceDirectory string) (*Hypervis
 		after := time.Now()
 		closeErr := file.Close()
 		if err != nil {
-			return nil, fmt.Errorf("read hypervisor clock: %w", err)
+			failures = append(failures, fmt.Errorf("read hypervisor clock %s: %w", device, err))
 		}
 		if closeErr != nil {
-			return nil, fmt.Errorf("close hypervisor clock: %w", closeErr)
+			failures = append(failures, fmt.Errorf("close hypervisor clock %s: %w", device, closeErr))
 		}
-		return observeHypervisorClock(source, before, time.Unix(int64(timestamp.Sec), int64(timestamp.Nsec)), after)
+		if err != nil || closeErr != nil {
+			continue
+		}
+		ref, err := observeHypervisorClock(source, before, time.Unix(int64(timestamp.Sec), int64(timestamp.Nsec)), after)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("sample hypervisor clock %s: %w", device, err))
+			continue
+		}
+		return ref, nil
 	}
-	return nil, nil
+	return nil, errors.Join(failures...)
 }
