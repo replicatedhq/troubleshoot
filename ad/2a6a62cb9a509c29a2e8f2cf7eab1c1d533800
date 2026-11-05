@@ -1,0 +1,33 @@
+pkg/apis/troubleshoot/v1beta3/zz_generated.deepcopy.go
+  s_01cf708738c775::t_38706ef0da6764 31
+  s_01cf708738c775::t_da41eedb980ba0 272,283,294
+pkg/loader/supportbundle_v1beta3_preservation_test.go
+  s_01cf708738c775::t_61b9966dc3a465 1-3,5-8,12-14,42-54,56-79,94-95,99-101,111-112
+  s_01cf708738c775::t_3e9d17f04a06f7 4,9-11,15-41,55,80-93,96-98,102-110
+pkg/apis/troubleshoot/v1beta3/converter.go
+  s_01cf708738c775::t_278d06a6563af7 20-23,51-53
+  s_01cf708738c775::t_20da57cd3efc8f 54
+pkg/apis/troubleshoot/v1beta3/collector_shared.go
+  s_01cf708738c775::t_20da57cd3efc8f 57-59
+  s_01cf708738c775::t_278d06a6563af7 4,49-53
+pkg/apis/troubleshoot/v1beta3/collector_shared_test.go
+  s_01cf708738c775::t_68bfba40667d98 12-14,60-100
+  s_01cf708738c775::t_61b9966dc3a465 1-11,15-46,103
+  s_01cf708738c775::t_a5e91bc454ade3 47-59,101-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ad2a6a62cb9a509c29a2e8f2cf7eab1c1d533800",
+  "prompts": {},
+  "sessions": {
+    "s_01cf708738c775": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a777-8497-7472-ae0c-227b10b44474",
+        "model": "gpt-6-astra"
+      },
+      "human_author": null
+    }
+  }
+}
