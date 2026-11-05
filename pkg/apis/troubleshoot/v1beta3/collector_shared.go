@@ -1,6 +1,7 @@
 package v1beta3
 
 import (
+	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
@@ -45,35 +46,21 @@ type TLSSecret struct {
 	Namespace string `json:"namespace" yaml:"namespace"`
 }
 
-// Temporary placeholder types for minimal v1beta3 implementation
-// These will be properly defined as we expand v1beta3 support
-type AfterCollection struct {
-	CollectorMeta `json:",inline" yaml:",inline"`
-	// TODO: Add fields as needed
-}
-
-type Analyze struct {
-	// TODO: Add fields as needed
-}
-
-type HostAnalyze struct {
-	// TODO: Add fields as needed
-}
-
-type HostCollect struct {
-	// TODO: Add fields as needed
-}
+// These sections have the same schema in both API versions.
+type AfterCollection = v1beta2.AfterCollection
+type Analyze = v1beta2.Analyze
+type HostAnalyze = v1beta2.HostAnalyze
+type HostCollect = v1beta2.HostCollect
 
 // Collect contains all collector definitions
-// For phase 1, we're focusing on Database collectors with StringOrValueFrom support
 type Collect struct {
+	// Reuse existing collectors; the outer database fields take precedence
+	// when the Kubernetes JSON serializer encodes or decodes this type.
+	v1beta2.Collect `json:",inline"`
 	// Database collectors with v1beta3 StringOrValueFrom support
 	Postgres   *Database `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mssql      *Database `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql      *Database `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis      *Database `json:"redis,omitempty" yaml:"redis,omitempty"`
 	ClickHouse *Database `json:"clickhouse,omitempty" yaml:"clickhouse,omitempty"`
-
-	// TODO: Add remaining collector types as we expand v1beta3 support
-	// For now, these are placeholders to make the types compile
 }

@@ -17,6 +17,10 @@ func ConvertToV1Beta2WithResolution(
 	defaultNamespace string,
 ) (*troubleshootv1beta2.SupportBundleSpec, error) {
 	v2spec := &troubleshootv1beta2.SupportBundleSpec{
+		AfterCollection:        v3spec.AfterCollection,
+		HostCollectors:         v3spec.HostCollectors,
+		Analyzers:              v3spec.Analyzers,
+		HostAnalyzers:          v3spec.HostAnalyzers,
 		Uri:                    v3spec.Uri,
 		RunHostCollectorsInPod: v3spec.RunHostCollectorsInPod,
 	}
@@ -34,8 +38,6 @@ func ConvertToV1Beta2WithResolution(
 		v2spec.Collectors = v2collectors
 	}
 
-	// TODO: Convert AfterCollection, HostCollectors, Analyzers, HostAnalyzers when v1beta3 support is expanded
-
 	return v2spec, nil
 }
 
@@ -46,7 +48,10 @@ func convertCollector(
 	client kubernetes.Interface,
 	defaultNamespace string,
 ) (*troubleshootv1beta2.Collect, error) {
-	v2collector := &troubleshootv1beta2.Collect{}
+	if v3collector == nil {
+		return nil, nil
+	}
+	v2collector := v3collector.Collect.DeepCopy()
 
 	// Convert database collectors
 	if v3collector.Postgres != nil {
@@ -88,8 +93,6 @@ func convertCollector(
 		}
 		v2collector.ClickHouse = db
 	}
-
-	// TODO: Add conversion for other collector types as v1beta3 support expands
 
 	return v2collector, nil
 }
