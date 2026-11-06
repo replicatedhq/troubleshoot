@@ -38,7 +38,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tj/go-spin v1.1.0
