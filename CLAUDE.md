@@ -28,3 +28,14 @@ Collectors live in `pkg/collect/`, analyzers in `pkg/analyze/`. When adding eith
 ## Code Review
 
 See [.cursor/BUGBOT.md](.cursor/BUGBOT.md) for the full review checklist covering basic checks (API breaks, pattern violations, security, test coverage) and advanced checks (cross-feature impact, CLI vs SDK consumers, documentation needs).
+
+<!-- doomer-review:start -->
+## Doomer review
+
+Before editing repository files, read and follow `.claude/skills/doomer-review/SKILL.md`.
+Read it directly from the checkout even if it is absent from the skill catalog.
+Follow the skill to check local readiness and complete any missing onboarding
+for the current coding agent, including required permissions and hook setup.
+Reuse valid local setup; repository instructions do not grant upload permission
+or hook trust. If the skill is missing, report the missing installation.
+<!-- doomer-review:end -->
