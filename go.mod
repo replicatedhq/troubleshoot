@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/go-getter v1.8.10
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.13.0
-	github.com/longhorn/go-common-libs v0.0.0-20261028232656-6805a1f65080
+	github.com/longhorn/go-common-libs v0.0.0-20261114062950-d3ec8b4403d1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.24
 	github.com/microsoft/go-mssqldb v1.11.2
@@ -47,7 +47,7 @@ require (
 	github.com/vmware-tanzu/velero v1.18.4
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
-	golang.org/x/exp v0.0.0-20261112173441-d10d3b464990
+	golang.org/x/exp v0.0.0-20261113113407-e3970619a1a4
 	golang.org/x/mod v0.43.0
 	golang.org/x/sync v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -60,7 +60,7 @@ require (
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/streaming v0.37.2
 	oras.land/oras-go/v2 v2.7.0
-	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/controller-runtime v0.25.3
 	sigs.k8s.io/e2e-framework v0.7.0
 )
 
