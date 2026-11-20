@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -40,27 +41,31 @@ func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 		return nil, errors.New("postgres uri cannot be empty")
 	}
 
+	var clientCertPair *tls.Certificate
+
 	if c.Collector.TLS != nil {
 		klog.V(2).Infof("Connecting to postgres with TLS client config")
-		// Set the libpq TLS environment variables since pgx parses them to
-		// create the TLS configuration (tls.Config instance) to connect with
-		// https://www.postgresql.org/docs/current/libpq-envars.html
 		caCert, clientCert, clientKey, err := getTLSParamTriplet(c.Context, c.Client, c.Collector.TLS)
 		if err != nil {
 			return nil, err
 		}
 
-		// Drop the TLS params to files and set the paths to their
-		// respective environment variables
-		// The environment variables are unset after the connection config
-		// is created. Their respective files are deleted as well.
-		tmpdir, err := os.MkdirTemp("", "ts-postgres-collector")
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create temp dir to store postgres collector TLS files")
-		}
-		defer os.RemoveAll(tmpdir)
-
 		if caCert != "" {
+			// Set the libpq root certificate environment variable since pgx
+			// parses it to build the root CA pool of the TLS configuration
+			// (tls.Config instance) used to connect with. pgx reads the CA cert
+			// eagerly while parsing the connection config, and its presence
+			// preserves libpq sslmode semantics (e.g. sslmode=require behaves
+			// like verify-ca when a root certificate is configured).
+			// https://www.postgresql.org/docs/current/libpq-envars.html
+			// The environment variable is unset and the file deleted after the
+			// connection config is created.
+			tmpdir, err := os.MkdirTemp("", "ts-postgres-collector")
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create temp dir to store postgres collector TLS files")
+			}
+			defer os.RemoveAll(tmpdir)
+
 			caCertPath := filepath.Join(tmpdir, "ca.crt")
 			err = os.WriteFile(caCertPath, []byte(caCert), 0644)
 			if err != nil {
@@ -74,32 +79,22 @@ func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 			defer os.Unsetenv("PGSSLROOTCERT")
 		}
 
-		if clientCert != "" {
-			clientCertPath := filepath.Join(tmpdir, "client.crt")
-			err = os.WriteFile(clientCertPath, []byte(clientCert), 0644)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to write client cert to file")
+		if clientCert != "" || clientKey != "" {
+			// pgx v5.13.0 no longer stores file-backed client certificates
+			// (PGSSLCERT/PGSSLKEY) in the parsed TLSConfig; it re-reads the files
+			// on every TLS handshake. Temp files written here are deleted before
+			// the connection is established, so load the pair in memory instead
+			// and set it on the parsed TLS configs after parsing. Setting
+			// TLSConfig.Certificates is the override pgx documents for its
+			// automatic client certificate reloading.
+			if clientCert == "" || clientKey == "" {
+				return nil, errors.New("both client cert and client key are required to configure postgres TLS")
 			}
-			err = os.Setenv("PGSSLCERT", clientCertPath)
+			pair, err := tls.X509KeyPair([]byte(clientCert), []byte(clientKey))
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to set PGSSLCERT environment variable")
+				return nil, errors.Wrap(err, "failed to load client cert and key")
 			}
-			klog.V(2).Infof("'PGSSLCERT' environment variable set to %q", clientCertPath)
-			defer os.Unsetenv("PGSSLCERT")
-		}
-
-		if clientKey != "" {
-			clientKeyPath := filepath.Join(tmpdir, "client.key")
-			err = os.WriteFile(clientKeyPath, []byte(clientKey), 0600)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to write client key to file")
-			}
-			err = os.Setenv("PGSSLKEY", clientKeyPath)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to set PGSSLKEY environment variable")
-			}
-			klog.V(2).Infof("'PGSSLKEY' environment variable set to %q", clientKeyPath)
-			defer os.Unsetenv("PGSSLKEY")
+			clientCertPair = &pair
 		}
 	}
 
@@ -108,6 +103,22 @@ func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 		return nil, errors.Wrap(err, "failed to parse postgres config")
 	}
 	klog.V(2).Infof("Successfully parsed postgres config")
+
+	if clientCertPair != nil {
+		// The primary TLS config and any per-host fallbacks each get their
+		// own tls.Config instance; set the pair on all of them.
+		tlsConfigs := []*tls.Config{cfg.TLSConfig}
+		for _, fallback := range cfg.Fallbacks {
+			if fallback.TLSConfig != nil {
+				tlsConfigs = append(tlsConfigs, fallback.TLSConfig)
+			}
+		}
+		for _, tlsConfig := range tlsConfigs {
+			if tlsConfig != nil {
+				tlsConfig.Certificates = []tls.Certificate{*clientCertPair}
+			}
+		}
+	}
 
 	return cfg, nil
 }
