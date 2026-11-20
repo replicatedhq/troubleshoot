@@ -50,7 +50,7 @@ And see our other tool [sbctl](https://github.com/replicatedhq/sbctl) that makes
 For questions about using Troubleshoot, how to contribute and engaging with the project in any other way, please refer to the following resources and channels.
 
 - [Open an issue](https://github.com/replicatedhq/troubleshoot/issues) in the GitHub repo
-- [#Community meetings calendar](https://calendar.google.com/calendar/u/0?cid=Y19mMGx1aGhiZGtscGllOGo5dWpicXMwNnN1a0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t). This happen monthly but dates may change and would be kept upto date in the calendar.
+- [Community meetings calendar](https://calendar.google.com/calendar/u/0?cid=Y19mMGx1aGhiZGtscGllOGo5dWpicXMwNnN1a0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t). No meetings are currently scheduled. Any future meetings will be posted to this calendar.
 
 # Software Bill of Materials
 A signed SBOM  that includes Troubleshoot dependencies is included in each release.
