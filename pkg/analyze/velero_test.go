@@ -7,7 +7,7 @@ import (
 	"time"
 
 	restic_types "github.com/replicatedhq/troubleshoot/pkg/analyze/types"
-	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	velerov1 "github.com/velero-io/velero/pkg/apis/velero/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
